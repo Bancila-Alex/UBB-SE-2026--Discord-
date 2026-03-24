@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ChatModule (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "ChatModule (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

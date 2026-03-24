@@ -1,0 +1,45 @@
+# ==========================================
+# Visual Studio & .NET Standard
+# ==========================================
+.vs/
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+*.user
+*.suo
+
+# ==========================================
+# WinUI 3 / Windows App SDK
+# ==========================================
+AppPackages/
+BundleArtifacts/
+Generated\ Files/
+GeneratedFiles/
+_pkginfo.txt
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.appxsym
+*.appxupload
+*.msixupload
+
+# ==========================================
+# NuGet
+# ==========================================
+*.nupkg
+[Pp]ackages/
+!/[Pp]ackages/build/
+.nuget/
+
+# ==========================================
+# SQL Server
+# ==========================================
+*.mdf
+*.ldf
+*.ndf
+
+# ==========================================
+# OS Files (Windows)
+# ==========================================
+Thumbs.db
