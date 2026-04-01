@@ -72,5 +72,15 @@ namespace ChatModule.Services
 
             return user;
         }
+
+        public async Task ChangePasswordAsync(string email, string newPassword)
+        {
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+                throw new InvalidOperationException("User not found.");
+
+            var passwordHash = HashPassword(newPassword);
+            await _userRepository.UpdatePasswordAsync(user.Id, passwordHash);
+        }
     }
 }
