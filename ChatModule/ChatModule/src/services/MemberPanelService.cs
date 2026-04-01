@@ -24,11 +24,7 @@ namespace ChatModule.Services
             _friendRepo = friendRepo;
         }
 
-        /// <summary>
-        /// Be careful when implementing / extending later, since GetMembersAsync also returns banned members, so if you want to exclude them, you need to filter them out by Role == ParticipantRole.Banned
-        /// </summary>
-        /// <param name="conversationId"></param>
-        /// <returns></returns>
+
         public async Task<List<Participant>> GetMembersAsync(Guid conversationId)
         {
             return await _participantRepo.GetAllForConversationAsync(conversationId);
