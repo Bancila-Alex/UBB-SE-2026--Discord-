@@ -151,7 +151,8 @@ namespace ChatModule.Repositories
             command.Parameters.AddWithValue("@U1", userId1);
             command.Parameters.AddWithValue("@U2", userId2);
             command.Parameters.AddWithValue("@AcceptedStatus", (byte)FriendStatus.Accepted);
-            var count = (int)await command.ExecuteScalarAsync();
+            var result = await command.ExecuteScalarAsync();
+            var count = Convert.ToInt32(result);
             return count > 0;
         }
 
