@@ -18,6 +18,15 @@ namespace ChatModule.Services
             _userRepository = userRepository;
         }
 
+        public async Task<List<Models.User>> GetCandidatesAsync(Guid conversationId, string query)
+        {
+            var participants = await _participantRepository.GetAllForConversationAsync(conversationId);
+            var memberIds = participants.Select(p => p.UserId).ToHashSet();
+
+            var matchingUsers = await _userRepository.SearchByUsernameAsync(query);
+            return matchingUsers.Where(u => memberIds.Contains(u.Id)).ToList();
+        }
+
         public async Task<List<Guid>> ExtractMentionedUserIdsAsync(Guid conversationId, string content)
         {
             if (string.IsNullOrWhiteSpace(content))
