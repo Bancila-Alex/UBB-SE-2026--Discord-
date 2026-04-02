@@ -2,6 +2,7 @@ using System;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Repositories;
+using ChatModule.src.domain;
 using ChatModule.src.domain.Enums;
 
 namespace ChatModule.Services
@@ -47,6 +48,54 @@ namespace ChatModule.Services
                 Status = FriendStatus.Pending,
                 IsMatch = false,
                 CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        public async Task AcceptRequestAsync(Guid currentUserId, Guid requesterId)
+        {
+            await _friendRepository.UpdateStatusAsync(requesterId, currentUserId, FriendStatus.Accepted);
+
+            var existingDm = await _conversationRepository.GetDmBetweenAsync(currentUserId, requesterId);
+            if (existingDm != null)
+            {
+                return;
+            }
+
+            var conversation = new Conversation
+            {
+                Id = Guid.NewGuid(),
+                Type = ConversationType.Dm,
+                Title = null,
+                IconUrl = null,
+                CreatedBy = currentUserId,
+                PinnedMessageId = null
+            };
+
+            await _conversationRepository.CreateAsync(conversation);
+
+            var now = DateTime.UtcNow;
+            await _participantRepository.CreateAsync(new Participant
+            {
+                Id = Guid.NewGuid(),
+                ConversationId = conversation.Id,
+                UserId = currentUserId,
+                JoinedAt = now,
+                Role = ParticipantRole.Member,
+                LastReadMessageId = null,
+                TimeoutUntil = null,
+                IsFavourite = false
+            });
+
+            await _participantRepository.CreateAsync(new Participant
+            {
+                Id = Guid.NewGuid(),
+                ConversationId = conversation.Id,
+                UserId = requesterId,
+                JoinedAt = now,
+                Role = ParticipantRole.Member,
+                LastReadMessageId = null,
+                TimeoutUntil = null,
+                IsFavourite = false
             });
         }
     }
