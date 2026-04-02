@@ -147,6 +147,10 @@ namespace ChatModule.src.view_models
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
             InsertMentionCommand = new RelayCommand<User>(InsertMentionAsync);
             ReactWithSpecificEmojiCommand = new RelayCommand<Tuple<Guid, string>>(ReactWithSpecificEmojiAsync);
+            LoadMoreCommand = new RelayCommand(LoadMoreAsync);
+            EditMessageCommand = new RelayCommand<Guid>(StartEditAsync);
+            DeleteMessageCommand = new RelayCommand<Guid>(DeleteAsync);
+            CancelEditCommand = new RelayCommand(CancelEditAsync);
         }
 
         private void HandleMentionSuggestionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
