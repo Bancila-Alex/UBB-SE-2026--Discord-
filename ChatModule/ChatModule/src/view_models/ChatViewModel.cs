@@ -38,6 +38,8 @@ namespace ChatModule.src.view_models
 
         public ObservableCollection<Message> Messages { get; } = new();
 
+        public ObservableCollection<User> MentionSuggestions { get; } = new();
+
         public Message? PinnedMessage
         {
             get => _pinnedMessage;
@@ -65,7 +67,11 @@ namespace ChatModule.src.view_models
         public string MessageInput
         {
             get => _messageInput;
-            set => Set(ref _messageInput, value);
+            set
+            {
+                if (Set(ref _messageInput, value))
+                    _ = UpdateMentionSuggestionsAsync();
+            }
         }
 
         public Message? ReplyingTo
@@ -90,6 +96,8 @@ namespace ChatModule.src.view_models
 
         public RelayCommand<Guid> ReplyToCommand { get; }
 
+        public RelayCommand<User> InsertMentionCommand { get; }
+
         public ChatViewModel(
             MessageService messageService,
             MessageInteractionService interactionService,
@@ -112,6 +120,7 @@ namespace ChatModule.src.view_models
             SendCommand = new RelayCommand(SendAsync);
             CancelReplyCommand = new RelayCommand(CancelReplyAsync);
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
+            InsertMentionCommand = new RelayCommand<User>(InsertMentionAsync);
         }
 
         public async Task LoadAsync(Guid conversationId)
@@ -208,6 +217,56 @@ namespace ChatModule.src.view_models
         {
             ScrollToMessageRequested?.Invoke(messageId);
             return Task.CompletedTask;
+        }
+
+        private async Task UpdateMentionSuggestionsAsync()
+        {
+            MentionSuggestions.Clear();
+
+            if (ConversationId == Guid.Empty)
+            {
+                return;
+            }
+
+            var atIndex = _messageInput.LastIndexOf('@');
+            if (atIndex < 0)
+            {
+                return;
+            }
+
+            var token = _messageInput.Substring(atIndex + 1);
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return;
+            }
+
+            var candidates = await _mentionService.GetCandidatesAsync(ConversationId, token);
+            foreach (var user in candidates)
+            {
+                MentionSuggestions.Add(user);
+            }
+        }
+
+        private Task InsertMentionAsync(User user)
+        {
+            var atIndex = _messageInput.LastIndexOf('@');
+            if (atIndex >= 0)
+            {
+                MessageInput = _messageInput.Substring(0, atIndex) + $"@{user.Username} ";
+            }
+
+            MentionSuggestions.Clear();
+            return Task.CompletedTask;
+        }
+
+        public async Task MarkVisibleMessagesAsReadAsync(Guid lastVisibleMessageId)
+        {
+            if (ConversationId == Guid.Empty)
+            {
+                return;
+            }
+
+            await _readReceiptService.MarkAsReadAsync(ConversationId, _currentUserId, lastVisibleMessageId);
         }
     }
 }
