@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
@@ -43,6 +44,8 @@ namespace ChatModule.src.view_models
         public ObservableCollection<Message> Messages { get; } = new();
 
         public ObservableCollection<User> MentionSuggestions { get; } = new();
+
+        public bool HasMentionSuggestions => MentionSuggestions.Count > 0;
 
         public Message? PinnedMessage
         {
@@ -135,6 +138,8 @@ namespace ChatModule.src.view_models
             _conversationRepository = conversationRepository;
             _currentUserId = currentUserId;
 
+            MentionSuggestions.CollectionChanged += HandleMentionSuggestionsChanged;
+
             ReactCommand = new RelayCommand<Guid>(OpenEmojiPickerAsync);
             ScrollToMessageCommand = new RelayCommand<Guid>(ScrollToMessageAsync);
             SendCommand = new RelayCommand(SendAsync);
@@ -142,6 +147,11 @@ namespace ChatModule.src.view_models
             ReplyToCommand = new RelayCommand<Guid>(ReplyToAsync);
             InsertMentionCommand = new RelayCommand<User>(InsertMentionAsync);
             ReactWithSpecificEmojiCommand = new RelayCommand<Tuple<Guid, string>>(ReactWithSpecificEmojiAsync);
+        }
+
+        private void HandleMentionSuggestionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            OnPropertyChanged(nameof(HasMentionSuggestions));
         }
 
         public async Task LoadAsync(Guid conversationId)
