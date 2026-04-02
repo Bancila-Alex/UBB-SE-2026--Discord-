@@ -23,9 +23,9 @@ namespace ChatModule.Repositories
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT TOP 1 id, conversation_id, user_id, joined_at, role, last_read_message_id, timeout_until, is_favourite
-FROM participants
-WHERE conversation_id = @ConversationId AND user_id = @UserId;";
+SELECT TOP 1 Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite
+FROM Participants
+WHERE ConversationId = @ConversationId AND UserId = @UserId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
@@ -48,9 +48,9 @@ WHERE conversation_id = @ConversationId AND user_id = @UserId;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT id, conversation_id, user_id, joined_at, role, last_read_message_id, timeout_until, is_favourite
-FROM participants
-WHERE conversation_id = @ConversationId;";
+SELECT Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite
+FROM Participants
+WHERE ConversationId = @ConversationId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
@@ -72,9 +72,9 @@ WHERE conversation_id = @ConversationId;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT id, conversation_id, user_id, joined_at, role, last_read_message_id, timeout_until, is_favourite
-FROM participants
-WHERE user_id = @UserId;";
+SELECT Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite
+FROM Participants
+WHERE UserId = @UserId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@UserId", userId);
@@ -94,8 +94,8 @@ WHERE user_id = @UserId;";
             await connection.OpenAsync();
 
             const string sql = @"
-INSERT INTO participants
-    (id, conversation_id, user_id, joined_at, role, last_read_message_id, timeout_until, is_favourite)
+INSERT INTO Participants
+    (Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite)
 VALUES
     (@Id, @ConversationId, @UserId, @JoinedAt, @Role, @LastReadMessageId, @TimeoutUntil, @IsFavourite);";
 
@@ -118,9 +118,9 @@ VALUES
             await connection.OpenAsync();
 
             const string sql = @"
-UPDATE participants
-SET role = @Role
-WHERE conversation_id = @ConversationId AND user_id = @UserId;";
+UPDATE Participants
+SET Role = @Role
+WHERE ConversationId = @ConversationId AND UserId = @UserId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Role", (int)role);
@@ -136,9 +136,9 @@ WHERE conversation_id = @ConversationId AND user_id = @UserId;";
             await connection.OpenAsync();
 
             const string sql = @"
-UPDATE participants
-SET last_read_message_id = @MessageId
-WHERE conversation_id = @ConversationId AND user_id = @UserId;";
+UPDATE Participants
+SET LastReadMessageId = @MessageId
+WHERE ConversationId = @ConversationId AND UserId = @UserId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@MessageId", messageId);
@@ -154,9 +154,9 @@ WHERE conversation_id = @ConversationId AND user_id = @UserId;";
             await connection.OpenAsync();
 
             const string sql = @"
-UPDATE participants
-SET timeout_until = @Until
-WHERE conversation_id = @ConversationId AND user_id = @UserId;";
+UPDATE Participants
+SET TimeoutUntil = @Until
+WHERE ConversationId = @ConversationId AND UserId = @UserId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Until", (object?)until ?? DBNull.Value);
@@ -172,9 +172,9 @@ WHERE conversation_id = @ConversationId AND user_id = @UserId;";
             await connection.OpenAsync();
 
             const string sql = @"
-UPDATE participants
-SET is_favourite = @IsFav
-WHERE conversation_id = @ConversationId AND user_id = @UserId;";
+UPDATE Participants
+SET IsFavourite = @IsFav
+WHERE ConversationId = @ConversationId AND UserId = @UserId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@IsFav", isFav);
@@ -190,8 +190,8 @@ WHERE conversation_id = @ConversationId AND user_id = @UserId;";
             await connection.OpenAsync();
 
             const string sql = @"
-DELETE FROM participants
-WHERE conversation_id = @ConversationId AND user_id = @UserId;";
+DELETE FROM Participants
+WHERE ConversationId = @ConversationId AND UserId = @UserId;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
@@ -202,16 +202,25 @@ WHERE conversation_id = @ConversationId AND user_id = @UserId;";
 
         private static Participant MapParticipant(SqlDataReader reader)
         {
+            var idOrdinal = reader.GetOrdinal("Id");
+            var conversationIdOrdinal = reader.GetOrdinal("ConversationId");
+            var userIdOrdinal = reader.GetOrdinal("UserId");
+            var joinedAtOrdinal = reader.GetOrdinal("JoinedAt");
+            var roleOrdinal = reader.GetOrdinal("Role");
+            var lastReadMessageIdOrdinal = reader.GetOrdinal("LastReadMessageId");
+            var timeoutUntilOrdinal = reader.GetOrdinal("TimeoutUntil");
+            var isFavouriteOrdinal = reader.GetOrdinal("IsFavourite");
+
             return new Participant
             {
-                Id = reader.GetGuid("id"),
-                ConversationId = reader.GetGuid("conversation_id"),
-                UserId = reader.GetGuid("user_id"),
-                JoinedAt = reader.GetDateTime("joined_at"),
-                Role = (ParticipantRole)reader.GetInt32("role"),
-                LastReadMessageId = reader.IsDBNull(reader.GetOrdinal("last_read_message_id")) ? null : reader.GetGuid("last_read_message_id"),
-                TimeoutUntil = reader.IsDBNull(reader.GetOrdinal("timeout_until")) ? null : reader.GetDateTime("timeout_until"),
-                IsFavourite = reader.GetBoolean("is_favourite"),
+                Id = reader.GetGuid(idOrdinal),
+                ConversationId = reader.GetGuid(conversationIdOrdinal),
+                UserId = reader.GetGuid(userIdOrdinal),
+                JoinedAt = reader.GetDateTime(joinedAtOrdinal),
+                Role = (ParticipantRole)reader.GetByte(roleOrdinal),
+                LastReadMessageId = reader.IsDBNull(lastReadMessageIdOrdinal) ? null : reader.GetGuid(lastReadMessageIdOrdinal),
+                TimeoutUntil = reader.IsDBNull(timeoutUntilOrdinal) ? null : reader.GetDateTime(timeoutUntilOrdinal),
+                IsFavourite = reader.GetBoolean(isFavouriteOrdinal),
             };
         }
     }

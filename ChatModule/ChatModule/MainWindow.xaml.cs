@@ -1,33 +1,45 @@
-using Microsoft.UI.Composition.Scenes;
+using ChatModule.Repositories;
+using ChatModule.Services;
+using ChatModule.ViewModels;
+using ChatModule.src.view_models;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Controls.Primitives;
-using Microsoft.UI.Xaml.Data;
-using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Navigation;
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
-using ChatModule.src.domain.Enums;
-
-// To learn more about WinUI, the WinUI project structure,
-// and more about our project templates, see: http://aka.ms/winui-project-info.
 
 namespace ChatModule
 {
-    /// <summary>
-    /// An empty window that can be used on its own or navigated to within a Frame.
-    /// </summary>
     public sealed partial class MainWindow : Window
     {
+        public MainViewModel ViewModel { get; }
+
         public MainWindow()
         {
+            var db = (Application.Current as App)?.DatabaseManager
+                     ?? new DatabaseManager("Server=localhost\\SQLEXPRESS;Database=ChatModule;Trusted_Connection=True;TrustServerCertificate=True;");
+
+            var userRepository = new UserRepository(db);
+            var friendRepository = new FriendRepository(db);
+            var conversationRepository = new ConversationRepository(db);
+            var participantRepository = new ParticipantRepository(db);
+            var messageRepository = new MessageRepository(db);
+
+            var conversationListService = new ConversationListService(conversationRepository, participantRepository, messageRepository, userRepository);
+            var friendRequestService = new FriendRequestService(friendRepository, userRepository, conversationRepository, participantRepository);
+            var friendListService = new FriendListService(friendRepository, userRepository);
+            var blockService = new BlockService(friendRepository, userRepository);
+            var profileService = new ProfileService(userRepository, friendRepository);
+            var directMessageService = new DirectMessageService(conversationRepository, participantRepository, friendRepository, userRepository);
+
+            ViewModel = new MainViewModel(
+                conversationListService,
+                friendRequestService,
+                friendListService,
+                blockService,
+                profileService,
+                directMessageService);
+
             InitializeComponent();
+
+            _ = ViewModel.InitialiseAsync(Guid.Empty, string.Empty);
         }
     }
 }

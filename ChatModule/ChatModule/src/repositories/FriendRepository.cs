@@ -156,7 +156,7 @@ namespace ChatModule.Repositories
             return count > 0;
         }
 
-        public async void CreateAsync(Friend friend)
+        public async Task CreateAsync(Friend friend)
         {
             const string sql = @"
             INSERT INTO Friends (Id, UserId1, UserId2, Status, IsMatch, CreatedAt)
@@ -188,7 +188,7 @@ namespace ChatModule.Repositories
             await command.ExecuteNonQueryAsync();
         }
 
-        public async void SetMatchAsync(Guid userId1, Guid userId2, bool isMatch)
+        public async Task SetMatchAsync(Guid userId1, Guid userId2, bool isMatch)
         {
             const string sql = @"
             UPDATE Friends

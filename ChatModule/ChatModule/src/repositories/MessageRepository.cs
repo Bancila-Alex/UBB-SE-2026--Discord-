@@ -364,7 +364,7 @@ ORDER BY Participant.UserId;";
                 ReplyToId = reader.IsDBNull(replyToIdOrdinal) ? null : reader.GetGuid(replyToIdOrdinal),
                 IsEdited = reader.GetBoolean(isEditedOrdinal),
                 IsDeleted = reader.GetBoolean(isDeletedOrdinal),
-                MessageType = (MessageType)reader.GetInt32(messageTypeOrdinal),
+                MessageType = (MessageType)reader.GetByte(messageTypeOrdinal),
                 ParentMessageId = reader.IsDBNull(parentMessageIdOrdinal) ? null : reader.GetGuid(parentMessageIdOrdinal)
             };
         }

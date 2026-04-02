@@ -41,7 +41,7 @@ namespace ChatModule.Services
                 throw new InvalidOperationException("A friend request already exists between these users.");
             }
 
-            _friendRepository.CreateAsync(new Friend
+            await _friendRepository.CreateAsync(new Friend
             {
                 Id = Guid.NewGuid(),
                 UserId1 = senderId,

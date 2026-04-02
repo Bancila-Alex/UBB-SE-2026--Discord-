@@ -159,14 +159,21 @@ WHERE Id = @Id;";
 
         private static Conversation MapConversation(SqlDataReader reader)
         {
+            var idOrdinal = reader.GetOrdinal("Id");
+            var typeOrdinal = reader.GetOrdinal("Type");
+            var titleOrdinal = reader.GetOrdinal("Title");
+            var iconUrlOrdinal = reader.GetOrdinal("IconUrl");
+            var createdByOrdinal = reader.GetOrdinal("CreatedBy");
+            var pinnedMessageIdOrdinal = reader.GetOrdinal("PinnedMessageId");
+
             return new Conversation
             {
-                Id = reader.GetGuid("id"),
-                Type = (ConversationType)reader.GetInt32("type"),
-                Title = reader.IsDBNull(reader.GetOrdinal("title")) ? null : reader.GetString("title"),
-                IconUrl = reader.IsDBNull(reader.GetOrdinal("icon_url")) ? null : reader.GetString("icon_url"),
-                CreatedBy = reader.GetGuid("created_by"),
-                PinnedMessageId = reader.IsDBNull(reader.GetOrdinal("pinned_message_id")) ? null : reader.GetGuid("pinned_message_id"),
+                Id = reader.GetGuid(idOrdinal),
+                Type = (ConversationType)reader.GetByte(typeOrdinal),
+                Title = reader.IsDBNull(titleOrdinal) ? null : reader.GetString(titleOrdinal),
+                IconUrl = reader.IsDBNull(iconUrlOrdinal) ? null : reader.GetString(iconUrlOrdinal),
+                CreatedBy = reader.GetGuid(createdByOrdinal),
+                PinnedMessageId = reader.IsDBNull(pinnedMessageIdOrdinal) ? null : reader.GetGuid(pinnedMessageIdOrdinal),
             };
         }
     }
