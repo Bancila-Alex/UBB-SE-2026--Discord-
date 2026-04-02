@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using ChatModule.Models;
 using ChatModule.Repositories;
@@ -97,6 +98,40 @@ namespace ChatModule.Services
                 TimeoutUntil = null,
                 IsFavourite = false
             });
+        }
+
+        public async Task DeclineRequestAsync(Guid currentUserId, Guid requesterId)
+        {
+            var relation = await _friendRepository.GetAsync(requesterId, currentUserId);
+            if (relation == null || relation.Status != FriendStatus.Pending)
+            {
+                throw new InvalidOperationException("No pending friend request found.");
+            }
+
+            await _friendRepository.DeleteAsync(requesterId, currentUserId);
+        }
+
+        public async Task<List<User>> GetIncomingRequestsAsync(Guid currentUserId)
+        {
+            var pendingRequests = await _friendRepository.GetPendingRequestsForUserAsync(currentUserId);
+            var senders = new List<User>();
+
+            foreach (var request in pendingRequests)
+            {
+                var sender = await _userRepository.GetByIdAsync(request.UserId1);
+                if (sender != null)
+                {
+                    senders.Add(sender);
+                }
+            }
+
+            return senders;
+        }
+
+        public async Task<FriendStatus?> GetRelationshipStatusAsync(Guid userId1, Guid userId2)
+        {
+            var relation = await _friendRepository.GetAsync(userId1, userId2);
+            return relation?.Status;
         }
     }
 }
