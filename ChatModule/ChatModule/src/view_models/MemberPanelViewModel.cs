@@ -11,7 +11,6 @@ namespace ChatModule.src.view_models
     {
         private readonly MemberPanelService _memberPanelService;
         private readonly ModerationService _moderationService;
-        private readonly SearchService _searchService;
         private readonly Guid _currentUserId;
         private Guid _conversationId;
 
@@ -25,8 +24,15 @@ namespace ChatModule.src.view_models
             set
             {
                 if (Set(ref _addMemberQuery, value))
-                    _ = SearchUsersAsync();
+                    _ = SearchUsersToAddAsync();
             }
+        }
+
+        private User? _selectedAddMember;
+        public User? SelectedAddMember
+        {
+            get => _selectedAddMember;
+            set => Set(ref _selectedAddMember, value);
         }
 
         private bool _isLoading;
@@ -37,21 +43,23 @@ namespace ChatModule.src.view_models
         }
 
         public RelayCommand LoadCommand { get; }
-        public RelayCommand<Guid> AddMemberCommand { get; }
+        public RelayCommand AddMemberCommand { get; }
+        public RelayCommand ViewProfileCommand { get; }
+
+        public event Action<Guid>? NavigateToProfileRequested;
 
         public MemberPanelViewModel(
             MemberPanelService memberPanelService,
             ModerationService moderationService,
-            SearchService searchService,
             Guid currentUserId)
         {
             _memberPanelService = memberPanelService ?? throw new ArgumentNullException(nameof(memberPanelService));
             _moderationService = moderationService ?? throw new ArgumentNullException(nameof(moderationService));
-            _searchService = searchService ?? throw new ArgumentNullException(nameof(searchService));
             _currentUserId = currentUserId;
 
             LoadCommand = new RelayCommand(LoadAsync);
-            AddMemberCommand = new RelayCommand<Guid>(AddMemberAsync);
+            AddMemberCommand = new RelayCommand(AddMemberAsync);
+            ViewProfileCommand = new RelayCommand(ViewProfileAsync);
         }
 
         public async Task InitializeAsync(Guid conversationId)
@@ -78,28 +86,46 @@ namespace ChatModule.src.view_models
             }
         }
 
-        private async Task SearchUsersAsync()
+        private async Task SearchUsersToAddAsync()
         {
             AddMemberResults.Clear();
+            SelectedAddMember = null;
 
             if (string.IsNullOrWhiteSpace(_addMemberQuery))
             {
                 return;
             }
 
-            var results = await _searchService.SearchUsersForAddMemberAsync(_conversationId, _addMemberQuery);
+            var results = await _memberPanelService.SearchUsersToAddAsync(_conversationId, _addMemberQuery);
             foreach (var user in results)
             {
                 AddMemberResults.Add(user);
             }
         }
 
-        private async Task AddMemberAsync(Guid userId)
+        private async Task AddMemberAsync()
         {
-            await _moderationService.AddMemberAsync(_conversationId, _currentUserId, userId);
+            if (SelectedAddMember == null)
+            {
+                return;
+            }
+
+            await _moderationService.AddMemberAsync(_conversationId, _currentUserId, SelectedAddMember.Id);
             AddMemberQuery = string.Empty;
             AddMemberResults.Clear();
+            SelectedAddMember = null;
             await LoadAsync();
+        }
+
+        private Task ViewProfileAsync()
+        {
+            if (SelectedAddMember == null)
+            {
+                return Task.CompletedTask;
+            }
+
+            NavigateToProfileRequested?.Invoke(SelectedAddMember.Id);
+            return Task.CompletedTask;
         }
     }
 }
