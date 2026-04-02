@@ -17,6 +17,20 @@ namespace ChatModule.src.view_models
         public ObservableCollection<Participant> Members { get; } = new();
         public ObservableCollection<User> AddMemberResults { get; } = new();
 
+        private Participant? _selectedMember;
+        public Participant? SelectedMember
+        {
+            get => _selectedMember;
+            set => Set(ref _selectedMember, value);
+        }
+
+        private User? _selectedAddMember;
+        public User? SelectedAddMember
+        {
+            get => _selectedAddMember;
+            set => Set(ref _selectedAddMember, value);
+        }
+
         private string _addMemberQuery = string.Empty;
         public string AddMemberQuery
         {
@@ -24,7 +38,9 @@ namespace ChatModule.src.view_models
             set
             {
                 if (Set(ref _addMemberQuery, value))
+                {
                     _ = SearchUsersToAddAsync();
+                }
             }
         }
 
@@ -45,8 +61,16 @@ namespace ChatModule.src.view_models
         public RelayCommand LoadCommand { get; }
         public RelayCommand AddMemberCommand { get; }
         public RelayCommand ViewProfileCommand { get; }
+        public RelayCommand BanMemberCommand { get; }
+        public RelayCommand UnbanMemberCommand { get; }
+        public RelayCommand TimeoutMemberCommand { get; }
+        public RelayCommand RemoveTimeoutCommand { get; }
+        public RelayCommand PromoteCommand { get; }
+        public RelayCommand DemoteCommand { get; }
 
         public event Action<Guid>? NavigateToProfileRequested;
+
+        public Func<Task<TimeSpan?>>? RequestTimeoutDurationAsync { get; set; }
 
         public MemberPanelViewModel(
             MemberPanelService memberPanelService,
@@ -60,6 +84,12 @@ namespace ChatModule.src.view_models
             LoadCommand = new RelayCommand(LoadAsync);
             AddMemberCommand = new RelayCommand(AddMemberAsync);
             ViewProfileCommand = new RelayCommand(ViewProfileAsync);
+            BanMemberCommand = new RelayCommand(BanMemberAsync);
+            UnbanMemberCommand = new RelayCommand(UnbanMemberAsync);
+            TimeoutMemberCommand = new RelayCommand(TimeoutMemberAsync);
+            RemoveTimeoutCommand = new RelayCommand(RemoveTimeoutAsync);
+            PromoteCommand = new RelayCommand(PromoteAsync);
+            DemoteCommand = new RelayCommand(DemoteAsync);
         }
 
         public async Task InitializeAsync(Guid conversationId)
@@ -126,6 +156,88 @@ namespace ChatModule.src.view_models
 
             NavigateToProfileRequested?.Invoke(SelectedAddMember.Id);
             return Task.CompletedTask;
+        }
+
+        private async Task BanMemberAsync()
+        {
+            if (SelectedMember == null)
+            {
+                return;
+            }
+
+            await _moderationService.BanMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await LoadAsync();
+        }
+
+        private async Task UnbanMemberAsync()
+        {
+            if (SelectedMember == null)
+            {
+                return;
+            }
+
+            await _moderationService.UnbanMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await LoadAsync();
+        }
+
+        private async Task TimeoutMemberAsync()
+        {
+            if (SelectedMember == null)
+            {
+                return;
+            }
+
+            var duration = await ChooseTimeoutDurationAsync();
+            if (!duration.HasValue)
+            {
+                return;
+            }
+
+            await _moderationService.TimeoutMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId, duration.Value);
+            await LoadAsync();
+        }
+
+        private async Task RemoveTimeoutAsync()
+        {
+            if (SelectedMember == null)
+            {
+                return;
+            }
+
+            await _moderationService.RemoveTimeoutAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await LoadAsync();
+        }
+
+        private async Task PromoteAsync()
+        {
+            if (SelectedMember == null)
+            {
+                return;
+            }
+
+            await _moderationService.PromoteMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await LoadAsync();
+        }
+
+        private async Task DemoteAsync()
+        {
+            if (SelectedMember == null)
+            {
+                return;
+            }
+
+            await _moderationService.DemoteMemberAsync(_conversationId, _currentUserId, SelectedMember.UserId);
+            await LoadAsync();
+        }
+
+        private async Task<TimeSpan?> ChooseTimeoutDurationAsync()
+        {
+            if (RequestTimeoutDurationAsync != null)
+            {
+                return await RequestTimeoutDurationAsync();
+            }
+
+            return TimeSpan.FromMinutes(10);
         }
     }
 }

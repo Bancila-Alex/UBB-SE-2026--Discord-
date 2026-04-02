@@ -17,7 +17,6 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <!-- Header -->
         <Border Grid.Row="0" Background="#2E236C" Padding="16,12">
             <TextBlock
                 Text="Members"
@@ -27,13 +26,13 @@
                 FontWeight="SemiBold" />
         </Border>
 
-        <!-- Members List -->
         <ListView
             Grid.Row="1"
             ItemsSource="{x:Bind ViewModel.Members, Mode=OneWay}"
+            SelectedItem="{x:Bind ViewModel.SelectedMember, Mode=TwoWay}"
             Background="Transparent"
             Padding="8"
-            SelectionMode="None">
+            SelectionMode="Single">
             <ListView.ItemTemplate>
                 <DataTemplate x:DataType="models:Participant">
                     <Border
@@ -51,10 +50,8 @@
             </ListView.ItemTemplate>
         </ListView>
 
-        <!-- Add Member Section -->
         <Border Grid.Row="2" Background="#2E236C" Padding="12">
             <StackPanel Spacing="8">
-
                 <TextBlock
                     Text="Add Member"
                     Foreground="#C8ACD6"
@@ -62,7 +59,6 @@
                     FontSize="14"
                     FontWeight="SemiBold" />
 
-                <!-- Search TextBox -->
                 <TextBox
                     Text="{x:Bind ViewModel.AddMemberQuery, Mode=TwoWay}"
                     PlaceholderText="Search by username..."
@@ -74,7 +70,6 @@
                     CornerRadius="4"
                     Padding="10,6" />
 
-                <!-- Search Results -->
                 <ListBox
                     ItemsSource="{x:Bind ViewModel.AddMemberResults, Mode=OneWay}"
                     SelectedItem="{x:Bind ViewModel.SelectedAddMember, Mode=TwoWay}"
@@ -96,6 +91,61 @@
                     </ListBox.ItemTemplate>
                 </ListBox>
 
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button
+                            Content="Ban"
+                            Command="{x:Bind ViewModel.BanMemberCommand}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            Padding="12,6" />
+                        <Button
+                            Content="Unban"
+                            Command="{x:Bind ViewModel.UnbanMemberCommand}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            Padding="12,6" />
+                        <Button
+                            Content="Timeout"
+                            Command="{x:Bind ViewModel.TimeoutMemberCommand}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            Padding="12,6" />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button
+                            Content="Remove Timeout"
+                            Command="{x:Bind ViewModel.RemoveTimeoutCommand}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            Padding="12,6" />
+                        <Button
+                            Content="Promote"
+                            Command="{x:Bind ViewModel.PromoteCommand}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            Padding="12,6" />
+                        <Button
+                            Content="Demote"
+                            Command="{x:Bind ViewModel.DemoteCommand}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="4"
+                            Padding="12,6" />
+                    </StackPanel>
+                </StackPanel>
+
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <Button
                         Content="Add Selected"
@@ -114,7 +164,6 @@
                         CornerRadius="4"
                         Padding="12,6" />
                 </StackPanel>
-
             </StackPanel>
         </Border>
     </Grid>
