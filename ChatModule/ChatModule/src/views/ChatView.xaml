@@ -145,37 +145,42 @@
                 FontWeight="SemiBold" />
         </Border>
 
-        <!-- Pinned Message -->
-        <Border
-            Grid.Row="0"
-            Background="#433D8B"
-            Padding="12,6"
-            Margin="0,44,0,0"
-            Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
-            <StackPanel Orientation="Horizontal" Spacing="6">
-                <TextBlock
-                    Text="📌"
-                    FontSize="13"
-                    VerticalAlignment="Center" />
-                <TextBlock
-                    Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
-                    Foreground="#C8ACD6"
-                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                    FontSize="13"
-                    MaxLines="1"
-                    TextTrimming="CharacterEllipsis"
-                    VerticalAlignment="Center" />
-            </StackPanel>
-        </Border>
+        <!-- Chat Area -->
+        <Grid Grid.Row="1">
+            <ListView
+                ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
+                ItemTemplate="{StaticResource MessageItemTemplate}"
+                Background="Transparent"
+                Padding="8,36,8,8"
+                SelectionMode="None" />
 
-        <!-- Messages List -->
-        <ListView
-            Grid.Row="1"
-            ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
-            ItemTemplate="{StaticResource MessageItemTemplate}"
-            Background="Transparent"
-            Padding="8"
-            SelectionMode="None" />
+            <Button
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Top"
+                Command="{x:Bind ViewModel.ScrollToMessageCommand}"
+                CommandParameter="{x:Bind ViewModel.PinnedMessage.Id, Mode=OneWay}"
+                Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
+                Background="#433D8B"
+                Foreground="#C8ACD6"
+                BorderThickness="0"
+                Padding="12,6"
+                HorizontalContentAlignment="Stretch">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                    <TextBlock
+                        Text="📌"
+                        FontSize="13"
+                        VerticalAlignment="Center" />
+                    <TextBlock
+                        Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
+                        Foreground="#C8ACD6"
+                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                        FontSize="13"
+                        MaxLines="1"
+                        TextTrimming="CharacterEllipsis"
+                        VerticalAlignment="Center" />
+                </StackPanel>
+            </Button>
+        </Grid>
 
         <!-- Reply Context Strip -->
         <Border
