@@ -53,6 +53,7 @@ ORDER BY CreatedAt;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
 
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
@@ -74,12 +75,14 @@ ORDER BY CreatedAt;";
 SELECT Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
 FROM Messages
 WHERE ConversationId = @ConversationId
+  AND MessageType <> @ReactionType
 ORDER BY CreatedAt ASC
 OFFSET @Skip ROWS
 FETCH NEXT @Take ROWS ONLY;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
             command.Parameters.AddWithValue("@Skip", skip);
             command.Parameters.AddWithValue("@Take", take);
 
@@ -218,10 +221,12 @@ ORDER BY CreatedAt;";
 SELECT TOP 1 Id, ConversationId, UserId, Content, CreatedAt, ReplyToId, IsEdited, IsDeleted, MessageType, ParentMessageId
 FROM Messages
 WHERE ConversationId = @ConversationId
+  AND MessageType <> @ReactionType
 ORDER BY CreatedAt DESC;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
 
             await using var reader = await command.ExecuteReaderAsync();
             if (!await reader.ReadAsync())
@@ -247,6 +252,7 @@ WHERE MessageToCount.ConversationId = @ConversationId
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
+            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
             command.Parameters.AddWithValue("@LastReadMessageId", lastReadMessageId);
             command.Parameters.AddWithValue("@UserId", userId);
 
@@ -257,6 +263,7 @@ INNER JOIN Messages LastReadMessage ON LastReadMessage.Id = @LastReadMessageId
 WHERE MessageToCount.ConversationId = @ConversationId
   AND LastReadMessage.ConversationId = @ConversationId
   AND MessageToCount.CreatedAt > LastReadMessage.CreatedAt
+  AND MessageToCount.MessageType <> @ReactionType
   AND (MessageToCount.UserId IS NULL OR MessageToCount.UserId <> @UserId);";
 
             var scalarResult = await command.ExecuteScalarAsync();
@@ -272,12 +279,14 @@ WHERE MessageToCount.ConversationId = @ConversationId
 SELECT TOP 1 Id
 FROM Messages
 WHERE ConversationId = @ConversationId
+  AND MessageType <> @ReactionType
   AND (UserId IS NULL OR UserId <> @UserId)
 ORDER BY CreatedAt DESC;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
             command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
 
             var scalarResult = await command.ExecuteScalarAsync();
             if (scalarResult == null || scalarResult == DBNull.Value)
@@ -297,11 +306,13 @@ ORDER BY CreatedAt DESC;";
 SELECT COUNT(*)
 FROM Messages
 WHERE ConversationId = @ConversationId
+  AND MessageType <> @ReactionType
   AND (UserId IS NULL OR UserId <> @UserId);";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
             command.Parameters.AddWithValue("@UserId", userId);
+            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
 
             var scalarResult = await command.ExecuteScalarAsync();
             return Convert.ToInt32(scalarResult);

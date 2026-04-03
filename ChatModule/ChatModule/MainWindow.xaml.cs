@@ -306,6 +306,19 @@ namespace ChatModule
                 await chatViewModel.LoadAsync(conversationId);
 
                 var chatView = new ChatView(chatViewModel);
+                chatViewModel.LeaveGroupRequested += async () =>
+                {
+                    try
+                    {
+                        await _groupService.LeaveGroupAsync(conversationId, ViewModel.CurrentUserId);
+                        await ShowInfoDialogAsync("Group", "You left the group.");
+                        ViewModel.GoToConversationsCommand.Execute(null);
+                    }
+                    catch (Exception ex)
+                    {
+                        await ShowInfoDialogAsync("Unable to leave group", ex.Message);
+                    }
+                };
 
                 if (conversation.Type == ConversationType.Group)
                 {

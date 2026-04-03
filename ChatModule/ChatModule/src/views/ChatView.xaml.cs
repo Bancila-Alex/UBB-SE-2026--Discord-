@@ -2,9 +2,11 @@ using ChatModule.src.view_models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
 using System;
 using System.Collections.Specialized;
 using System.Linq;
+using Windows.Storage.Pickers;
 
 namespace ChatModule.src.views
 {
@@ -83,6 +85,36 @@ namespace ChatModule.src.views
             }
         }
 
+        private async void OnLeaveGroupClicked(object sender, RoutedEventArgs e)
+        {
+            await ViewModel.LeaveGroupAsync();
+        }
+
+        private async void OnAttachClicked(object sender, RoutedEventArgs e)
+        {
+            if (App.MainAppWindow == null)
+            {
+                return;
+            }
+
+            var picker = new FileOpenPicker();
+            picker.FileTypeFilter.Add("*");
+
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(App.MainAppWindow);
+            WinRT.Interop.InitializeWithWindow.Initialize(picker, hwnd);
+
+            var file = await picker.PickSingleFileAsync();
+            if (file != null)
+            {
+                await ViewModel.SetAttachmentAsync(file.Path);
+            }
+        }
+
+        private async void OnClearAttachmentClicked(object sender, RoutedEventArgs e)
+        {
+            await ViewModel.ClearAttachmentAsync();
+        }
+
         private async void OnReadReceiptTapped(object sender, TappedRoutedEventArgs e)
         {
             if (sender is TextBlock { Tag: Guid messageId })
@@ -116,19 +148,29 @@ namespace ChatModule.src.views
                 return null;
             }
 
-            var emojiBox = new TextBox
+            var list = new ListView
             {
-                PlaceholderText = "Emoji",
-                Text = "👍"
+                SelectionMode = ListViewSelectionMode.Single,
+                IsItemClickEnabled = true,
+                ItemsSource = new[] { "👍", "❤️", "😂", "🔥", "👏", "😮", "😢", "🙏", "🎉", "👀" },
+                Background = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 23, 21, 59)),
+                Foreground = new SolidColorBrush(Microsoft.UI.ColorHelper.FromArgb(255, 200, 172, 214)),
+                Width = 280,
+                MaxHeight = 220
+            };
+
+            var selected = default(string);
+            list.ItemClick += (_, args) =>
+            {
+                selected = args.ClickedItem as string;
             };
 
             var dialog = new ContentDialog
             {
-                Title = "React",
-                Content = emojiBox,
-                PrimaryButtonText = "Apply",
+                Title = "Pick a reaction",
+                Content = list,
+                PrimaryButtonText = "Use",
                 CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Primary,
                 XamlRoot = XamlRoot
             };
 
@@ -138,8 +180,7 @@ namespace ChatModule.src.views
                 return null;
             }
 
-            var emoji = emojiBox.Text?.Trim();
-            return string.IsNullOrWhiteSpace(emoji) ? null : emoji;
+            return string.IsNullOrWhiteSpace(selected) ? list.SelectedItem as string : selected;
         }
     }
 }

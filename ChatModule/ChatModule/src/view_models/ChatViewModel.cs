@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
@@ -29,11 +30,13 @@ namespace ChatModule.src.view_models
         private string? _inputDisabledReason;
         private bool _isLoading;
         private string _messageInput = string.Empty;
+        private string? _selectedAttachmentPath;
         private Message? _replyingTo;
         private Message? _editingMessage;
         private int _messageSkip = 0;
         private const int PageSize = 100;
         private bool _hasMoreMessages = true;
+        private bool _isUnreadInitialized;
 
         public Guid ConversationId { get; private set; }
 
@@ -90,6 +93,16 @@ namespace ChatModule.src.view_models
             }
         }
 
+        public string? SelectedAttachmentPath
+        {
+            get => _selectedAttachmentPath;
+            private set => Set(ref _selectedAttachmentPath, value);
+        }
+
+        public string? SelectedAttachmentName => string.IsNullOrWhiteSpace(SelectedAttachmentPath)
+            ? null
+            : Path.GetFileName(SelectedAttachmentPath);
+
         public Message? ReplyingTo
         {
             get => _replyingTo;
@@ -108,6 +121,7 @@ namespace ChatModule.src.view_models
 
         public event Action<Guid>? ScrollToMessageRequested;
         public event Action<string>? ReadReceiptDetailsRequested;
+        public event Action? LeaveGroupRequested;
 
         public RelayCommand<Guid> ReactCommand { get; }
 
@@ -284,6 +298,7 @@ namespace ChatModule.src.view_models
 
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
+                _isUnreadInitialized = true;
             }
             catch (Exception ex)
             {
@@ -327,8 +342,11 @@ namespace ChatModule.src.view_models
 
                 if (string.IsNullOrWhiteSpace(MessageInput))
                 {
-                    ErrorMessage = "Empty messages cannot be sent.";
-                    return;
+                    if (string.IsNullOrWhiteSpace(SelectedAttachmentPath))
+                    {
+                        ErrorMessage = "Empty messages cannot be sent.";
+                        return;
+                    }
                 }
 
                 if (EditingMessage != null)
@@ -338,6 +356,13 @@ namespace ChatModule.src.view_models
                 }
 
                 var content = MessageInput;
+                if (!string.IsNullOrWhiteSpace(SelectedAttachmentPath))
+                {
+                    var attachmentLine = $"[File] {SelectedAttachmentPath}";
+                    content = string.IsNullOrWhiteSpace(content)
+                        ? attachmentLine
+                        : $"{content}{Environment.NewLine}{attachmentLine}";
+                }
                 var replyToId = ReplyingTo?.Id;
 
                 var message = await _messageService.SendMessageAsync(ConversationId, _currentUserId, content, replyToId);
@@ -347,6 +372,8 @@ namespace ChatModule.src.view_models
                 await UpdateUnreadSeparatorAsync();
 
                 MessageInput = string.Empty;
+                SelectedAttachmentPath = null;
+                OnPropertyChanged(nameof(SelectedAttachmentName));
                 ReplyingTo = null;
 
                 await _readReceiptService.MarkLatestAsReadAsync(ConversationId, _currentUserId);
@@ -552,11 +579,13 @@ namespace ChatModule.src.view_models
 
         private async Task PopulateReactionCountersAsync()
         {
-            foreach (var message in Messages)
+            for (var index = 0; index < Messages.Count; index++)
             {
+                var message = Messages[index];
                 if (message.MessageType == MessageType.Reaction)
                 {
                     message.ReactionCounts.Clear();
+                    Messages[index] = message;
                     continue;
                 }
 
@@ -565,7 +594,10 @@ namespace ChatModule.src.view_models
                     .Where(r => !r.IsDeleted && !string.IsNullOrWhiteSpace(r.Content))
                     .GroupBy(r => r.Content!)
                     .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
+                Messages[index] = message;
             }
+
+            OnPropertyChanged(nameof(Messages));
         }
 
         private async Task ReactWithSpecificEmojiAsync(Tuple<Guid, string> payload)
@@ -671,6 +703,11 @@ namespace ChatModule.src.view_models
                 return;
             }
 
+            if (!_isUnreadInitialized)
+            {
+                return;
+            }
+
             await _readReceiptService.MarkAsReadAsync(ConversationId, _currentUserId, lastVisibleMessageId);
             await PopulateReadReceiptMetadataAsync();
             await UpdateUnreadSeparatorAsync();
@@ -761,6 +798,30 @@ namespace ChatModule.src.view_models
 
             var body = string.Join(Environment.NewLine, readers);
             ReadReceiptDetailsRequested?.Invoke(body);
+        }
+
+        public Task LeaveGroupAsync()
+        {
+            if (IsConversationGroup)
+            {
+                LeaveGroupRequested?.Invoke();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task SetAttachmentAsync(string path)
+        {
+            SelectedAttachmentPath = string.IsNullOrWhiteSpace(path) ? null : path;
+            OnPropertyChanged(nameof(SelectedAttachmentName));
+            return Task.CompletedTask;
+        }
+
+        public Task ClearAttachmentAsync()
+        {
+            SelectedAttachmentPath = null;
+            OnPropertyChanged(nameof(SelectedAttachmentName));
+            return Task.CompletedTask;
         }
 
         private async Task UpdateUnreadSeparatorAsync()

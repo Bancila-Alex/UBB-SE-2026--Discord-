@@ -183,7 +183,7 @@
     <Grid Background="#17153B">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="260" />
         </Grid.ColumnDefinitions>
 
         <Grid Grid.Column="0">
@@ -219,6 +219,19 @@
                         BorderThickness="0"
                         CornerRadius="4"
                         Padding="12,6" />
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Leave"
+                        Click="OnLeaveGroupClicked"
+                        Background="#2E236C"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#433D8B"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        Margin="90,0,0,0"
+                        Visibility="{x:Bind ViewModel.IsConversationGroup, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 </Grid>
             </Border>
 
@@ -323,6 +336,35 @@
                 Margin="2,20,2,0"
                 Visibility="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}" />
 
+            <Border
+                Grid.Row="1"
+                Background="#2E236C"
+                CornerRadius="4"
+                Padding="8,6"
+                Margin="0,0,0,6"
+                Visibility="{x:Bind ViewModel.SelectedAttachmentName, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Text="{x:Bind ViewModel.SelectedAttachmentName, Mode=OneWay}"
+                        Foreground="#C8ACD6"
+                        TextTrimming="CharacterEllipsis"
+                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                        FontSize="12" />
+                    <Button
+                        Grid.Column="1"
+                        Content="✕"
+                        Click="OnClearAttachmentClicked"
+                        Background="Transparent"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0"
+                        Padding="6,0" />
+                </Grid>
+            </Border>
+
             <ListBox
                 Grid.Row="1"
                 ItemsSource="{x:Bind ViewModel.MentionSuggestions, Mode=OneWay}"
@@ -362,12 +404,27 @@
 
             <Grid Grid.Row="2" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBox
+                <Button
                     Grid.Column="0"
+                    Content="📎"
+                    Click="OnAttachClicked"
+                    Background="#433D8B"
+                    Foreground="#C8ACD6"
+                    BorderThickness="0"
+                    CornerRadius="4"
+                    Width="42"
+                    Height="36"
+                    Padding="0"
+                    Margin="0,0,4,0"
+                    IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}" />
+
+                <TextBox
+                    Grid.Column="1"
                     Text="{x:Bind ViewModel.MessageInput, Mode=TwoWay}"
                     PlaceholderText="Type a message..."
                     Background="#433D8B"
@@ -380,7 +437,7 @@
                     IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}" />
 
                 <Button
-                    Grid.Column="1"
+                    Grid.Column="2"
                     Content="Send"
                     Command="{x:Bind ViewModel.SendCommand}"
                     IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}"
