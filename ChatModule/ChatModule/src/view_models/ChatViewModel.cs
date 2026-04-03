@@ -245,6 +245,7 @@ namespace ChatModule.src.view_models
                 Messages.Clear();
                 foreach (var message in messages)
                 {
+                    PrepareMessageForDisplay(message);
                     message.IsMine = message.UserId == _currentUserId;
                     Messages.Add(message);
                 }
@@ -358,13 +359,16 @@ namespace ChatModule.src.view_models
                 var content = MessageInput;
                 if (!string.IsNullOrWhiteSpace(SelectedAttachmentPath))
                 {
-                    content = string.IsNullOrWhiteSpace(content) ? "[Attachment]" : content;
+                    var storedAttachmentPath = await _messageService.PersistImageAttachmentAsync(SelectedAttachmentPath);
+                    content = string.IsNullOrWhiteSpace(content)
+                        ? $"[Image] {storedAttachmentPath}"
+                        : $"[Image] {storedAttachmentPath}{Environment.NewLine}{content}";
                 }
                 var replyToId = ReplyingTo?.Id;
 
                 var message = await _messageService.SendMessageAsync(ConversationId, _currentUserId, content, replyToId);
+                PrepareMessageForDisplay(message);
                 message.IsMine = true;
-                message.AttachmentImagePath = SelectedAttachmentPath;
                 Messages.Add(message);
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
@@ -410,6 +414,7 @@ namespace ChatModule.src.view_models
                 var older = await _messageService.GetMessagesAsync(ConversationId, _currentUserId, _messageSkip, PageSize);
                 foreach (var message in older)
                 {
+                    PrepareMessageForDisplay(message);
                     message.IsMine = message.UserId == _currentUserId;
                     Messages.Add(message);
                 }
@@ -587,14 +592,7 @@ namespace ChatModule.src.view_models
                     continue;
                 }
 
-                if (!string.IsNullOrWhiteSpace(message.Content) && message.Content.StartsWith("[Image] ", StringComparison.Ordinal))
-                {
-                    message.AttachmentImagePath = message.Content.Substring("[Image] ".Length);
-                }
-                else
-                {
-                    message.AttachmentImagePath = null;
-                }
+                PrepareMessageForDisplay(message);
 
                 var reactions = await _interactionService.GetReactionsAsync(message.Id);
                 message.ReactionCounts = reactions
@@ -910,6 +908,41 @@ namespace ChatModule.src.view_models
             }
 
             OnPropertyChanged(nameof(HasUnreadSeparator));
+        }
+
+        private static void PrepareMessageForDisplay(Message message)
+        {
+            if (string.IsNullOrWhiteSpace(message.Content))
+            {
+                message.AttachmentImagePath = null;
+                return;
+            }
+
+            var content = message.Content!;
+            if (!content.StartsWith("[Image] ", StringComparison.Ordinal))
+            {
+                message.AttachmentImagePath = null;
+                return;
+            }
+
+            var body = content.Substring("[Image] ".Length);
+            var split = body.Split(new[] { "\r\n", "\n" }, 2, StringSplitOptions.None);
+            var imagePath = split[0].Trim();
+            if (!File.Exists(imagePath))
+            {
+                var fileName = Path.GetFileName(imagePath);
+                if (!string.IsNullOrWhiteSpace(fileName))
+                {
+                    var candidate = Path.Combine(AppContext.BaseDirectory, "attachments", fileName);
+                    if (File.Exists(candidate))
+                    {
+                        imagePath = candidate;
+                    }
+                }
+            }
+
+            message.AttachmentImagePath = imagePath;
+            message.Content = split.Length > 1 ? split[1] : string.Empty;
         }
     }
 }

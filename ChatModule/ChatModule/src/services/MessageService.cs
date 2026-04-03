@@ -3,6 +3,7 @@ using ChatModule.Repositories;
 using ChatModule.src.domain.Enums;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace ChatModule.Services
@@ -152,6 +153,40 @@ namespace ChatModule.Services
             message.SenderAvatarUrl = sender?.AvatarUrl;
 
             return message;
+        }
+
+        public Task<string> PersistImageAttachmentAsync(string sourcePath)
+        {
+            if (string.IsNullOrWhiteSpace(sourcePath) || !File.Exists(sourcePath))
+            {
+                throw new InvalidOperationException("Attachment file was not found.");
+            }
+
+            var extension = Path.GetExtension(sourcePath).ToLowerInvariant();
+            if (extension != ".png" && extension != ".jpg" && extension != ".jpeg")
+            {
+                throw new InvalidOperationException("Only PNG and JPEG images are supported.");
+            }
+
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            var attachmentsDir = Path.Combine(appData, "ChatModule", "attachments");
+            Directory.CreateDirectory(attachmentsDir);
+
+            var appFolder = AppContext.BaseDirectory;
+            var binAttachmentsDir = Path.Combine(appFolder, "attachments");
+            Directory.CreateDirectory(binAttachmentsDir);
+
+            var targetFileName = $"{Guid.NewGuid():N}{extension}";
+            var targetPath = Path.Combine(attachmentsDir, targetFileName);
+            File.Copy(sourcePath, targetPath, overwrite: false);
+
+            var binTargetPath = Path.Combine(binAttachmentsDir, targetFileName);
+            if (!File.Exists(binTargetPath))
+            {
+                File.Copy(sourcePath, binTargetPath, overwrite: false);
+            }
+
+            return Task.FromResult(targetPath);
         }
 
         public async Task EditMessageAsync(Guid messageId, Guid requesterId, string newContent)
