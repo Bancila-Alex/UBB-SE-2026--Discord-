@@ -13,6 +13,7 @@ namespace ChatModule.Models
         public Guid? LastReadMessageId { get; set; }
         public DateTime? TimeoutUntil { get; set; }
         public bool IsFavourite { get; set; }
+        public bool IsNew { get; set; }
         public string? Nickname { get; set; }
     }
 }

@@ -53,7 +53,6 @@ ORDER BY CreatedAt;";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
-            command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
 
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
@@ -248,23 +247,15 @@ FROM Messages MessageToCount
 INNER JOIN Messages LastReadMessage ON LastReadMessage.Id = @LastReadMessageId
 WHERE MessageToCount.ConversationId = @ConversationId
   AND LastReadMessage.ConversationId = @ConversationId
-  AND MessageToCount.CreatedAt > LastReadMessage.CreatedAt;";
+  AND MessageToCount.CreatedAt > LastReadMessage.CreatedAt
+  AND MessageToCount.MessageType <> @ReactionType
+  AND (MessageToCount.UserId IS NULL OR MessageToCount.UserId <> @UserId);";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@ConversationId", conversationId);
             command.Parameters.AddWithValue("@ReactionType", (int)MessageType.Reaction);
             command.Parameters.AddWithValue("@LastReadMessageId", lastReadMessageId);
             command.Parameters.AddWithValue("@UserId", userId);
-
-            command.CommandText = @"
-SELECT COUNT(*)
-FROM Messages MessageToCount
-INNER JOIN Messages LastReadMessage ON LastReadMessage.Id = @LastReadMessageId
-WHERE MessageToCount.ConversationId = @ConversationId
-  AND LastReadMessage.ConversationId = @ConversationId
-  AND MessageToCount.CreatedAt > LastReadMessage.CreatedAt
-  AND MessageToCount.MessageType <> @ReactionType
-  AND (MessageToCount.UserId IS NULL OR MessageToCount.UserId <> @UserId);";
 
             var scalarResult = await command.ExecuteScalarAsync();
             return Convert.ToInt32(scalarResult);

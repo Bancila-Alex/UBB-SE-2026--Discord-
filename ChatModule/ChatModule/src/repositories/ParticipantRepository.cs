@@ -23,7 +23,7 @@ namespace ChatModule.Repositories
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT TOP 1 Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, Nickname
+SELECT TOP 1 Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, IsNew, Nickname
 FROM Participants
 WHERE ConversationId = @ConversationId AND UserId = @UserId;";
 
@@ -48,7 +48,7 @@ WHERE ConversationId = @ConversationId AND UserId = @UserId;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, Nickname
+SELECT Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, IsNew, Nickname
 FROM Participants
 WHERE ConversationId = @ConversationId;";
 
@@ -72,7 +72,7 @@ WHERE ConversationId = @ConversationId;";
             await connection.OpenAsync();
 
             const string sql = @"
-SELECT Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, Nickname
+SELECT Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, IsNew, Nickname
 FROM Participants
 WHERE UserId = @UserId;";
 
@@ -95,9 +95,9 @@ WHERE UserId = @UserId;";
 
             const string sql = @"
 INSERT INTO Participants
-    (Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, Nickname)
+    (Id, ConversationId, UserId, JoinedAt, Role, LastReadMessageId, TimeoutUntil, IsFavourite, IsNew, Nickname)
 VALUES
-    (@Id, @ConversationId, @UserId, @JoinedAt, @Role, @LastReadMessageId, @TimeoutUntil, @IsFavourite, @Nickname);";
+    (@Id, @ConversationId, @UserId, @JoinedAt, @Role, @LastReadMessageId, @TimeoutUntil, @IsFavourite, @IsNew, @Nickname);";
 
             await using var command = new SqlCommand(sql, connection);
             command.Parameters.AddWithValue("@Id", participant.Id);
@@ -108,6 +108,7 @@ VALUES
             command.Parameters.AddWithValue("@LastReadMessageId", (object?)participant.LastReadMessageId ?? DBNull.Value);
             command.Parameters.AddWithValue("@TimeoutUntil", (object?)participant.TimeoutUntil ?? DBNull.Value);
             command.Parameters.AddWithValue("@IsFavourite", participant.IsFavourite);
+            command.Parameters.AddWithValue("@IsNew", participant.IsNew);
             command.Parameters.AddWithValue("@Nickname", (object?)participant.Nickname ?? DBNull.Value);
 
             await command.ExecuteNonQueryAsync();
@@ -229,6 +230,7 @@ WHERE ConversationId = @ConversationId AND UserId = @UserId;";
             var lastReadMessageIdOrdinal = reader.GetOrdinal("LastReadMessageId");
             var timeoutUntilOrdinal = reader.GetOrdinal("TimeoutUntil");
             var isFavouriteOrdinal = reader.GetOrdinal("IsFavourite");
+            var isNewOrdinal = reader.GetOrdinal("IsNew");
             var nicknameOrdinal = reader.GetOrdinal("Nickname");
 
             return new Participant
@@ -241,6 +243,7 @@ WHERE ConversationId = @ConversationId AND UserId = @UserId;";
                 LastReadMessageId = reader.IsDBNull(lastReadMessageIdOrdinal) ? null : reader.GetGuid(lastReadMessageIdOrdinal),
                 TimeoutUntil = reader.IsDBNull(timeoutUntilOrdinal) ? null : reader.GetDateTime(timeoutUntilOrdinal),
                 IsFavourite = reader.GetBoolean(isFavouriteOrdinal),
+                IsNew = reader.GetBoolean(isNewOrdinal),
                 Nickname = reader.IsDBNull(nicknameOrdinal) ? null : reader.GetString(nicknameOrdinal),
             };
         }

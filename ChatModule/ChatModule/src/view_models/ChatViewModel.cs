@@ -373,6 +373,19 @@ namespace ChatModule.src.view_models
                 var message = await _messageService.SendMessageAsync(ConversationId, _currentUserId, content, replyToId);
                 PrepareMessageForDisplay(message);
                 message.IsMine = true;
+                ApplyMessageActions(message);
+
+                if (replyToId.HasValue)
+                {
+                    var parts = await _interactionService.BuildReplyPreviewPartsAsync(replyToId.Value);
+                    if (parts.HasValue)
+                    {
+                        message.ReplyPreviewSender = parts.Value.Sender;
+                        message.ReplyPreviewContent = parts.Value.Content;
+                        message.ReplyPreviewText = $"{parts.Value.Sender}: {parts.Value.Content}";
+                    }
+                }
+
                 Messages.Add(message);
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
@@ -608,8 +621,6 @@ namespace ChatModule.src.view_models
                     continue;
                 }
 
-                PrepareMessageForDisplay(message);
-
                 var reactions = await _interactionService.GetReactionsAsync(message.Id);
                 message.ReactionCounts = reactions
                     .Where(r => !r.IsDeleted && !string.IsNullOrWhiteSpace(r.Content))
@@ -617,14 +628,13 @@ namespace ChatModule.src.view_models
                     .ToDictionary(group => group.Key, group => group.Count(), StringComparer.Ordinal);
                 Messages[index] = message;
             }
-
-            OnPropertyChanged(nameof(Messages));
         }
 
         private async Task PopulateReplyPreviewsAsync()
         {
-            foreach (var message in Messages)
+            for (var i = 0; i < Messages.Count; i++)
             {
+                var message = Messages[i];
                 ApplyMessageActions(message);
 
                 if (message.ReplyToId.HasValue)
@@ -649,9 +659,9 @@ namespace ChatModule.src.view_models
                     message.ReplyPreviewContent = null;
                     message.ReplyPreviewText = null;
                 }
-            }
 
-            OnPropertyChanged(nameof(Messages));
+                Messages[i] = message;
+            }
         }
 
         private async Task ReactWithSpecificEmojiAsync(Tuple<Guid, string> payload)
@@ -790,51 +800,45 @@ namespace ChatModule.src.view_models
             var participants = await _readReceiptService.GetParticipantsAsync(ConversationId);
             var participantCount = participants.Count;
 
-            foreach (var message in Messages)
+            for (var i = 0; i < Messages.Count; i++)
             {
+                var message = Messages[i];
                 message.IsMine = message.UserId == _currentUserId;
 
-                if (message.MessageType == MessageType.Reaction || message.IsDeleted)
+                if (message.MessageType != MessageType.Reaction && !message.IsDeleted)
                 {
-                    message.ReadByCount = 0;
-                    message.ReadReceiptLabel = null;
-                    continue;
-                }
+                    var readByCount = await _readReceiptService.GetReadByCountAsync(ConversationId, message.Id);
+                    message.ReadByCount = readByCount;
 
-                var readByCount = await _readReceiptService.GetReadByCountAsync(ConversationId, message.Id);
-                message.ReadByCount = readByCount;
-
-                if (!message.IsMine)
-                {
-                    message.ReadReceiptLabel = null;
-                    continue;
-                }
-
-                var otherReaders = await _readReceiptService.GetReadByOthersCountAsync(ConversationId, message.Id, _currentUserId);
-
-                if (message.MessageType == MessageType.System)
-                {
-                    message.ReadReceiptLabel = null;
-                    continue;
-                }
-
-                if (otherReaders <= 0)
-                {
-                    message.ReadReceiptLabel = null;
-                }
-                else if (!IsConversationGroup)
-                {
-                    message.ReadReceiptLabel = "Seen";
+                    if (message.IsMine && message.MessageType != MessageType.System)
+                    {
+                        var otherReaders = await _readReceiptService.GetReadByOthersCountAsync(ConversationId, message.Id, _currentUserId);
+                        if (otherReaders <= 0)
+                        {
+                            message.ReadReceiptLabel = null;
+                        }
+                        else if (!IsConversationGroup)
+                        {
+                            message.ReadReceiptLabel = "Seen";
+                        }
+                        else
+                        {
+                            message.ReadReceiptLabel = $"Seen by {otherReaders}/{Math.Max(1, participantCount - 1)}";
+                        }
+                    }
+                    else
+                    {
+                        message.ReadReceiptLabel = null;
+                    }
                 }
                 else
                 {
-                    message.ReadReceiptLabel = otherReaders <= 0
-                        ? null
-                        : $"Seen by {otherReaders}/{Math.Max(1, participantCount - 1)}";
+                    message.ReadByCount = 0;
+                    message.ReadReceiptLabel = null;
                 }
-            }
 
-            OnPropertyChanged(nameof(Messages));
+                Messages[i] = message;
+            }
         }
 
         public async Task ShowReadReceiptDetailsAsync(Guid messageId)
