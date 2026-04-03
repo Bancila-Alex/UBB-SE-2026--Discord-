@@ -11,11 +11,13 @@ namespace ChatModule.Services
     {
         private readonly ParticipantRepository _participantRepository;
         private readonly MessageRepository _messageRepository;
+        private readonly UserRepository _userRepository;
 
-        public ReadReceiptService(ParticipantRepository participantRepository, MessageRepository messageRepository)
+        public ReadReceiptService(ParticipantRepository participantRepository, MessageRepository messageRepository, UserRepository userRepository)
         {
             _participantRepository = participantRepository ?? throw new ArgumentNullException(nameof(participantRepository));
             _messageRepository = messageRepository ?? throw new ArgumentNullException(nameof(messageRepository));
+            _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         }
 
         public async Task MarkAsReadAsync(Guid conversationId, Guid userId, Guid messageId)
@@ -94,6 +96,12 @@ namespace ChatModule.Services
             return readers.Count;
         }
 
+        public async Task<int> GetReadByOthersCountAsync(Guid conversationId, Guid messageId, Guid currentUserId)
+        {
+            var readers = await GetReadReceiptsAsync(conversationId, messageId);
+            return readers.Count(participant => participant.UserId != currentUserId);
+        }
+
         public async Task<Guid?> GetLastReadMessageAsync(Guid conversationId, Guid userId)
         {
             var participant = await _participantRepository.GetAsync(conversationId, userId);
@@ -103,6 +111,40 @@ namespace ChatModule.Services
         public async Task<List<Participant>> GetParticipantsAsync(Guid conversationId)
         {
             return await _participantRepository.GetAllForConversationAsync(conversationId);
+        }
+
+        public async Task<DateTime?> GetLastReadTimestampAsync(Guid conversationId, Guid userId)
+        {
+            var participant = await _participantRepository.GetAsync(conversationId, userId);
+            if (participant?.LastReadMessageId == null)
+            {
+                return null;
+            }
+
+            var lastReadMessage = await _messageRepository.GetByIdAsync(participant.LastReadMessageId.Value);
+            return lastReadMessage?.CreatedAt;
+        }
+
+        public async Task<List<string>> GetReaderUsernamesAsync(Guid conversationId, Guid messageId, Guid? excludeUserId = null)
+        {
+            var readers = await GetReadReceiptsAsync(conversationId, messageId);
+            var usernames = new List<string>();
+
+            foreach (var reader in readers)
+            {
+                if (excludeUserId.HasValue && reader.UserId == excludeUserId.Value)
+                {
+                    continue;
+                }
+
+                var user = await _userRepository.GetByIdAsync(reader.UserId);
+                if (user != null)
+                {
+                    usernames.Add(user.Username);
+                }
+            }
+
+            return usernames;
         }
     }
 }

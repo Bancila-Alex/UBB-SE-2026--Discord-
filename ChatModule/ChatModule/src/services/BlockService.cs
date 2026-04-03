@@ -36,11 +36,33 @@ namespace ChatModule.Services
                 return;
             }
 
+            if (relation.Status == FriendStatus.Accepted)
+            {
+                await _friendRepository.SetMatchAsync(blockerId, targetId, true);
+            }
+            else if (relation.Status == FriendStatus.Pending)
+            {
+                await _friendRepository.SetMatchAsync(blockerId, targetId, false);
+            }
+
             await _friendRepository.UpdateStatusAsync(blockerId, targetId, FriendStatus.Blocked);
         }
 
         public async Task UnblockUserAsync(Guid blockerId, Guid targetId)
         {
+            var relation = await _friendRepository.GetAsync(blockerId, targetId);
+            if (relation == null)
+            {
+                return;
+            }
+
+            if (relation.Status == FriendStatus.Blocked)
+            {
+                var restoredStatus = relation.IsMatch ? FriendStatus.Accepted : FriendStatus.Pending;
+                await _friendRepository.UpdateStatusAsync(blockerId, targetId, restoredStatus);
+                return;
+            }
+
             await _friendRepository.DeleteAsync(blockerId, targetId);
         }
 

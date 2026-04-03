@@ -29,6 +29,17 @@ namespace ChatModule.Services
         {
             var message = await _messageRepo.GetByIdAsync(messageId)
                 ?? throw new InvalidOperationException("Message not found.");
+
+            if (string.IsNullOrWhiteSpace(emoji))
+            {
+                throw new InvalidOperationException("Reaction cannot be empty.");
+            }
+
+            if (message.MessageType == MessageType.Reaction)
+            {
+                throw new InvalidOperationException("You cannot react to a reaction message.");
+            }
+
             await RequireCanSendAsync(message.ConversationId, userId);
             var existingReactions = await _messageRepo.GetReactionsForMessageAsync(messageId);
             if (existingReactions.Any(r => r.UserId == userId))

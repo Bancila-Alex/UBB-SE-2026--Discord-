@@ -1,6 +1,7 @@
 using ChatModule.src.view_models;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using System;
 using System.Collections.Specialized;
 using System.Linq;
@@ -15,10 +16,12 @@ namespace ChatModule.src.views
         {
             ViewModel = viewModel;
             InitializeComponent();
+            ViewModel.RequestEmojiAsync = RequestEmojiAsync;
 
             Loaded += OnLoaded;
             Unloaded += OnUnloaded;
             ViewModel.ScrollToMessageRequested += OnScrollToMessageRequested;
+            ViewModel.ReadReceiptDetailsRequested += OnReadReceiptDetailsRequested;
             ViewModel.Messages.CollectionChanged += OnMessagesCollectionChanged;
         }
 
@@ -31,6 +34,7 @@ namespace ChatModule.src.views
         private void OnUnloaded(object sender, RoutedEventArgs e)
         {
             ViewModel.ScrollToMessageRequested -= OnScrollToMessageRequested;
+            ViewModel.ReadReceiptDetailsRequested -= OnReadReceiptDetailsRequested;
             ViewModel.Messages.CollectionChanged -= OnMessagesCollectionChanged;
             Loaded -= OnLoaded;
             Unloaded -= OnUnloaded;
@@ -58,9 +62,15 @@ namespace ChatModule.src.views
 
         private void OnMessagesCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
         {
-            if (ViewModel.Messages.Count > 0)
+            if (ViewModel.Messages.Count > 0 && e?.Action == NotifyCollectionChangedAction.Add && e.NewItems != null)
             {
-                _ = ViewModel.MarkVisibleMessagesAsReadAsync(ViewModel.Messages[^1].Id);
+                foreach (var item in e.NewItems)
+                {
+                    if (item is ChatModule.Models.Message newMessage && !newMessage.IsMine)
+                    {
+                        _ = ViewModel.MarkVisibleMessagesAsReadAsync(newMessage.Id);
+                    }
+                }
             }
         }
 
@@ -71,6 +81,65 @@ namespace ChatModule.src.views
             {
                 MessagesList.ScrollIntoView(target);
             }
+        }
+
+        private async void OnReadReceiptTapped(object sender, TappedRoutedEventArgs e)
+        {
+            if (sender is TextBlock { Tag: Guid messageId })
+            {
+                await ViewModel.ShowReadReceiptDetailsAsync(messageId);
+            }
+        }
+
+        private async void OnReadReceiptDetailsRequested(string body)
+        {
+            if (XamlRoot == null)
+            {
+                return;
+            }
+
+            var dialog = new ContentDialog
+            {
+                Title = "Seen By",
+                Content = body,
+                CloseButtonText = "Close",
+                XamlRoot = XamlRoot
+            };
+
+            _ = await dialog.ShowAsync();
+        }
+
+        private async System.Threading.Tasks.Task<string?> RequestEmojiAsync()
+        {
+            if (XamlRoot == null)
+            {
+                return null;
+            }
+
+            var emojiBox = new TextBox
+            {
+                PlaceholderText = "Emoji",
+                Text = "👍"
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = "React",
+                Content = emojiBox,
+                PrimaryButtonText = "Apply",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+            {
+                return null;
+            }
+
+            var emoji = emojiBox.Text?.Trim();
+            return string.IsNullOrWhiteSpace(emoji) ? null : emoji;
         }
     }
 }

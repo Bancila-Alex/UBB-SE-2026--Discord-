@@ -43,6 +43,13 @@ namespace ChatModule.Services
             var existingRelation = await _friendRepository.GetAsync(senderId, receiverId);
             if (existingRelation != null)
             {
+                if (existingRelation.Status == FriendStatus.Blocked)
+                {
+                    await _friendRepository.UpdateStatusAsync(senderId, receiverId, FriendStatus.Pending);
+                    await _friendRepository.SetMatchAsync(senderId, receiverId, false);
+                    return;
+                }
+
                 throw new InvalidOperationException("A friend request already exists between these users.");
             }
 

@@ -107,6 +107,7 @@ namespace ChatModule.src.view_models
         public event Action<Guid, List<Message>>? ReactionsChanged;
 
         public event Action<Guid>? ScrollToMessageRequested;
+        public event Action<string>? ReadReceiptDetailsRequested;
 
         public RelayCommand<Guid> ReactCommand { get; }
 
@@ -137,6 +138,7 @@ namespace ChatModule.src.view_models
         public ICommand CloseSearchCommand { get; }
 
         public RelayCommand<Guid> JumpToSearchResultCommand { get; }
+        public RelayCommand<Guid> ShowReadReceiptDetailsCommand { get; }
 
         public MessageSearchViewModel MessageSearch { get; }
 
@@ -208,6 +210,7 @@ namespace ChatModule.src.view_models
             OpenSearchCommand = new RelayCommand(OpenSearchAsync);
             CloseSearchCommand = new RelayCommand(CloseSearchAsync);
             JumpToSearchResultCommand = new RelayCommand<Guid>(JumpToSearchResultAsync);
+            ShowReadReceiptDetailsCommand = new RelayCommand<Guid>(ShowReadReceiptDetailsAsync);
         }
 
         private void HandleMentionSuggestionsChanged(object? sender, NotifyCollectionChangedEventArgs e)
@@ -715,7 +718,13 @@ namespace ChatModule.src.view_models
                     continue;
                 }
 
-                var otherReaders = Math.Max(0, readByCount - 1);
+                var otherReaders = await _readReceiptService.GetReadByOthersCountAsync(ConversationId, message.Id, _currentUserId);
+
+                if (message.MessageType == MessageType.System)
+                {
+                    message.ReadReceiptLabel = null;
+                    continue;
+                }
 
                 if (otherReaders <= 0)
                 {
@@ -736,6 +745,24 @@ namespace ChatModule.src.view_models
             OnPropertyChanged(nameof(Messages));
         }
 
+        public async Task ShowReadReceiptDetailsAsync(Guid messageId)
+        {
+            if (ConversationId == Guid.Empty || messageId == Guid.Empty)
+            {
+                return;
+            }
+
+            var readers = await _readReceiptService.GetReaderUsernamesAsync(ConversationId, messageId, _currentUserId);
+            if (readers.Count == 0)
+            {
+                ReadReceiptDetailsRequested?.Invoke("No one else has seen this message yet.");
+                return;
+            }
+
+            var body = string.Join(Environment.NewLine, readers);
+            ReadReceiptDetailsRequested?.Invoke(body);
+        }
+
         private async Task UpdateUnreadSeparatorAsync()
         {
             if (Messages.Count == 0)
@@ -747,6 +774,7 @@ namespace ChatModule.src.view_models
             }
 
             var lastReadMessageId = await _readReceiptService.GetLastReadMessageAsync(ConversationId, _currentUserId);
+            var lastReadTimestamp = await _readReceiptService.GetLastReadTimestampAsync(ConversationId, _currentUserId);
             var firstUnread = default(Message);
             var unreadCount = 0;
 
@@ -754,7 +782,7 @@ namespace ChatModule.src.view_models
             {
                 foreach (var message in Messages)
                 {
-                    if (message.UserId == _currentUserId)
+                    if (message.UserId == _currentUserId || message.MessageType == MessageType.System)
                     {
                         continue;
                     }
@@ -782,7 +810,12 @@ namespace ChatModule.src.view_models
                     continue;
                 }
 
-                if (message.UserId == _currentUserId)
+                if (message.UserId == _currentUserId || message.MessageType == MessageType.System)
+                {
+                    continue;
+                }
+
+                if (lastReadTimestamp.HasValue && message.CreatedAt <= lastReadTimestamp.Value)
                 {
                     continue;
                 }

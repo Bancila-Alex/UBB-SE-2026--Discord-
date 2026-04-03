@@ -62,7 +62,7 @@ namespace ChatModule
             var searchService = new SearchService(messageRepository, participantRepository, userRepository);
             var messageService = new MessageService(messageRepository, participantRepository, userRepository);
             var messageInteractionService = new MessageInteractionService(messageRepository, participantRepository, userRepository);
-            var readReceiptService = new ReadReceiptService(participantRepository, messageRepository);
+            var readReceiptService = new ReadReceiptService(participantRepository, messageRepository, userRepository);
             var mentionService = new MentionService(participantRepository, userRepository);
 
             _userRepository = userRepository;
@@ -285,53 +285,65 @@ namespace ChatModule
 
         private async Task OpenChatAsync(Guid conversationId)
         {
-            var conversation = await _conversationRepository.GetByIdAsync(conversationId);
-            if (conversation == null)
+            try
             {
-                return;
-            }
-
-            var chatViewModel = new ChatViewModel(
-                _messageService,
-                _messageInteractionService,
-                _readReceiptService,
-                _mentionService,
-                _directMessageService,
-                _conversationRepository,
-                _searchService,
-                ViewModel.CurrentUserId);
-
-            await chatViewModel.LoadAsync(conversationId);
-
-            var chatView = new ChatView(chatViewModel);
-
-            if (conversation.Type == ConversationType.Group)
-            {
-                var memberPanelViewModel = new MemberPanelViewModel(_memberPanelService, _moderationService, ViewModel.CurrentUserId);
-                memberPanelViewModel.NavigateToProfileRequested += async userId =>
+                var conversation = await _conversationRepository.GetByIdAsync(conversationId);
+                if (conversation == null)
                 {
-                    var profileVm = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, ViewModel.CurrentUserId);
-                    await profileVm.LoadAsync(userId);
-                    var profilePanelVm = new ConversationSidePanelViewModel(ConversationType.Dm, profileVm);
-                    chatView.SetSidePanel(new ConversationSidePanelView(profilePanelVm));
-                };
-                await memberPanelViewModel.LoadAsync(conversationId);
-                var sideVm = new ConversationSidePanelViewModel(ConversationType.Group, memberPanelViewModel);
-                chatView.SetSidePanel(new ConversationSidePanelView(sideVm));
-            }
-            else
-            {
-                var otherUser = await _directMessageService.GetOtherUserAsync(conversationId, ViewModel.CurrentUserId);
-                if (otherUser != null)
+                    return;
+                }
+
+                var chatViewModel = new ChatViewModel(
+                    _messageService,
+                    _messageInteractionService,
+                    _readReceiptService,
+                    _mentionService,
+                    _directMessageService,
+                    _conversationRepository,
+                    _searchService,
+                    ViewModel.CurrentUserId);
+
+                await chatViewModel.LoadAsync(conversationId);
+
+                var chatView = new ChatView(chatViewModel);
+
+                if (conversation.Type == ConversationType.Group)
                 {
-                    var profileVm = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, ViewModel.CurrentUserId);
-                    await profileVm.LoadAsync(otherUser.Id);
-                    var sideVm = new ConversationSidePanelViewModel(ConversationType.Dm, profileVm);
+                    var memberPanelViewModel = new MemberPanelViewModel(_memberPanelService, _moderationService, ViewModel.CurrentUserId);
+                    memberPanelViewModel.NavigateToProfileRequested += async userId =>
+                    {
+                        var profileVm = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, ViewModel.CurrentUserId);
+                        await profileVm.LoadAsync(userId);
+                        var profilePanelVm = new ConversationSidePanelViewModel(ConversationType.Dm, profileVm, () =>
+                        {
+                            var membersPanelVm = new ConversationSidePanelViewModel(ConversationType.Group, memberPanelViewModel);
+                            chatView.SetSidePanel(new ConversationSidePanelView(membersPanelVm));
+                        });
+                        chatView.SetSidePanel(new ConversationSidePanelView(profilePanelVm));
+                    };
+                    await memberPanelViewModel.LoadAsync(conversationId);
+                    var sideVm = new ConversationSidePanelViewModel(ConversationType.Group, memberPanelViewModel);
                     chatView.SetSidePanel(new ConversationSidePanelView(sideVm));
                 }
-            }
+                else
+                {
+                    var otherUser = await _directMessageService.GetOtherUserAsync(conversationId, ViewModel.CurrentUserId);
+                    if (otherUser != null)
+                    {
+                        var profileVm = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, ViewModel.CurrentUserId);
+                        await profileVm.LoadAsync(otherUser.Id);
+                        var sideVm = new ConversationSidePanelViewModel(ConversationType.Dm, profileVm);
+                        chatView.SetSidePanel(new ConversationSidePanelView(sideVm));
+                    }
+                }
 
-            CurrentPageHost.Content = chatView;
+                CurrentPageHost.Content = chatView;
+            }
+            catch (InvalidOperationException ex)
+            {
+                await ShowInfoDialogAsync("Unable to open conversation", ex.Message);
+                ViewModel.GoToConversationsCommand.Execute(null);
+            }
         }
     }
 }

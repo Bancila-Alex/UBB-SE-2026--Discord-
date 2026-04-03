@@ -21,7 +21,11 @@
         </Grid.RowDefinitions>
 
         <!-- Header (always visible) -->
-        <Border Grid.Row="0" Background="#2E236C" Padding="16,14">
+        <Border
+            Grid.Row="0"
+            Background="#2E236C"
+            Padding="16,14"
+            Visibility="{x:Bind ViewModel.ShowHeader, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -51,7 +55,7 @@
         <ScrollViewer
             Grid.Row="1"
             VerticalScrollBarVisibility="Auto"
-            Visibility="{x:Bind ViewModel.ShowMemberContent, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+            Visibility="{x:Bind ViewModel.IsPanelVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
             <StackPanel Spacing="8" Padding="8,8,8,12">
 
                 <!-- Loading indicator -->
@@ -128,12 +132,32 @@
                                         </StackPanel>
                                     </StackPanel>
 
+                                    <!-- View profile (all members) -->
+                                    <Button
+                                        Grid.Column="2"
+                                        Content="👤"
+                                        ToolTipService.ToolTip="View Profile"
+                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ViewProfileCommand}"
+                                        CommandParameter="{x:Bind UserId}"
+                                        Background="Transparent"
+                                        Foreground="#C8ACD6"
+                                        BorderThickness="0"
+                                        CornerRadius="4"
+                                        Width="30"
+                                        Height="30"
+                                        Padding="0"
+                                        FontSize="14"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center" />
+
                                     <!-- Admin action buttons -->
                                     <StackPanel
                                         Grid.Column="2"
                                         Orientation="Horizontal"
                                         Spacing="6"
                                         VerticalAlignment="Center"
+                                        HorizontalAlignment="Right"
+                                        Margin="0,0,34,0"
                                         Visibility="{Binding ElementName=RootControl, Path=ViewModel.IsAdmin, Converter={StaticResource BoolToVisibility}}">
                                         <Button
                                             Content="↑"
@@ -197,19 +221,6 @@
                                             Command="{Binding ElementName=RootControl, Path=ViewModel.BanMemberCommand}"
                                             CommandParameter="{x:Bind UserId}"
                                             Background="#433D8B"
-                                            Foreground="#C8ACD6"
-                                            BorderThickness="0"
-                                            CornerRadius="4"
-                                            Width="30"
-                                            Height="30"
-                                            Padding="0"
-                                            FontSize="14" />
-                                        <Button
-                                            Content="👤"
-                                            ToolTipService.ToolTip="View Profile"
-                                            Command="{Binding ElementName=RootControl, Path=ViewModel.ViewProfileCommand}"
-                                            CommandParameter="{x:Bind UserId}"
-                                            Background="Transparent"
                                             Foreground="#C8ACD6"
                                             BorderThickness="0"
                                             CornerRadius="4"

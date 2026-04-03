@@ -168,12 +168,14 @@
                     Grid.Column="1"
                     Grid.Row="2"
                     Text="{Binding ReadReceiptLabel}"
+                    Tapped="OnReadReceiptTapped"
                     Foreground="#C8ACD6"
                     Opacity="0.75"
                     FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
                     FontSize="11"
                     Margin="6,4,0,0"
-                    Visibility="{Binding ReadByCount, Converter={StaticResource CountToVisibility}}" />
+                    Tag="{Binding Id}"
+                    Visibility="{Binding ReadReceiptLabel, Converter={StaticResource NullToVisibility}}" />
             </Grid>
         </DataTemplate>
     </UserControl.Resources>
@@ -181,7 +183,7 @@
     <Grid Background="#17153B">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="300" />
         </Grid.ColumnDefinitions>
 
         <Grid Grid.Column="0">
