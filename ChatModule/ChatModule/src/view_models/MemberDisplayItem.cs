@@ -13,6 +13,22 @@ namespace ChatModule.src.view_models
         public UserStatus Status { get; set; }
         public ParticipantRole Role { get; set; }
         public bool HasTimeout { get; set; }
+        public DateTime? TimeoutUntil { get; set; }
+
+        public string? TimeoutRemainingLabel
+        {
+            get
+            {
+                if (!TimeoutUntil.HasValue || TimeoutUntil.Value <= DateTime.UtcNow)
+                    return null;
+                var remaining = TimeoutUntil.Value - DateTime.UtcNow;
+                if (remaining.TotalDays >= 1)
+                    return $"⏱ {(int)remaining.TotalDays}d {remaining.Hours}h left";
+                if (remaining.TotalHours >= 1)
+                    return $"⏱ {(int)remaining.TotalHours}h {remaining.Minutes}m left";
+                return $"⏱ {remaining.Minutes}m left";
+            }
+        }
 
         public string RoleLabel => Role switch
         {

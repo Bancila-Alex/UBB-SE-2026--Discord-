@@ -151,7 +151,8 @@ namespace ChatModule.src.view_models
                         AvatarUrl = user.AvatarUrl,
                         Status = user.Status,
                         Role = participant.Role,
-                        HasTimeout = participant.TimeoutUntil.HasValue && participant.TimeoutUntil > DateTime.UtcNow
+                        HasTimeout = participant.TimeoutUntil.HasValue && participant.TimeoutUntil > DateTime.UtcNow,
+                        TimeoutUntil = participant.TimeoutUntil
                     };
 
                     if (participant.Role == ChatModule.src.domain.Enums.ParticipantRole.Banned)

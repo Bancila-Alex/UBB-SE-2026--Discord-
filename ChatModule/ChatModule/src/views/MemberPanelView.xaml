@@ -93,71 +93,77 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:MemberDisplayItem">
                             <Border Background="#2E236C" CornerRadius="6" Padding="10,10" Margin="0,0,0,4">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="Auto" />
-                                        <ColumnDefinition Width="*" />
-                                        <ColumnDefinition Width="Auto" />
-                                    </Grid.ColumnDefinitions>
+                                <StackPanel Spacing="6">
 
-                                    <!-- Avatar -->
-                                    <Grid Grid.Column="0" Width="36" Height="36" Margin="0,0,10,0">
-                                        <Ellipse Fill="#433D8B" />
-                                        <Image
-                                            Source="{x:Bind AvatarUrl, Converter={StaticResource StringToImageSource}}"
-                                            Stretch="UniformToFill"
-                                            Visibility="{x:Bind AvatarUrl, Converter={StaticResource NullToVisibility}}" />
-                                    </Grid>
+                                    <!-- Row 1: avatar + name/status + profile button -->
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
 
-                                    <!-- Username + status + role -->
-                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
-                                        <TextBlock
-                                            Text="{x:Bind Username}"
-                                            Foreground="#C8ACD6"
-                                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                                            FontSize="14" />
-                                        <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
-                                            <Ellipse
-                                                Width="10"
-                                                Height="10"
-                                                Fill="{x:Bind GetStatusBrush()}"
-                                                VerticalAlignment="Center" />
+                                        <!-- Avatar -->
+                                        <Grid Grid.Column="0" Width="36" Height="36" Margin="0,0,10,0">
+                                            <Ellipse Fill="#433D8B" />
+                                            <Image
+                                                Source="{x:Bind AvatarUrl, Converter={StaticResource StringToImageSource}}"
+                                                Stretch="UniformToFill"
+                                                Visibility="{x:Bind AvatarUrl, Converter={StaticResource NullToVisibility}}" />
+                                        </Grid>
+
+                                        <!-- Username + status + role + timeout countdown -->
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                                             <TextBlock
-                                                Text="{x:Bind RoleLabel}"
+                                                Text="{x:Bind Username}"
                                                 Foreground="#C8ACD6"
+                                                FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                                FontSize="14" />
+                                            <StackPanel Orientation="Horizontal" Spacing="5" VerticalAlignment="Center">
+                                                <Ellipse
+                                                    Width="10"
+                                                    Height="10"
+                                                    Fill="{x:Bind GetStatusBrush()}"
+                                                    VerticalAlignment="Center" />
+                                                <TextBlock
+                                                    Text="{x:Bind RoleLabel}"
+                                                    Foreground="#C8ACD6"
+                                                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                                                    FontSize="11"
+                                                    Opacity="0.7"
+                                                    VerticalAlignment="Center" />
+                                            </StackPanel>
+                                            <TextBlock
+                                                Text="{x:Bind TimeoutRemainingLabel}"
+                                                Foreground="#FAA61A"
                                                 FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
                                                 FontSize="11"
-                                                Opacity="0.7"
-                                                VerticalAlignment="Center" />
+                                                Visibility="{x:Bind HasTimeout, Converter={StaticResource BoolToVisibility}}" />
                                         </StackPanel>
-                                    </StackPanel>
 
-                                    <!-- View profile (all members) -->
-                                    <Button
-                                        Grid.Column="2"
-                                        Content="👤"
-                                        ToolTipService.ToolTip="View Profile"
-                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ViewProfileCommand}"
-                                        CommandParameter="{x:Bind UserId}"
-                                        Background="Transparent"
-                                        Foreground="#C8ACD6"
-                                        BorderThickness="0"
-                                        CornerRadius="4"
-                                        Width="30"
-                                        Height="30"
-                                        Padding="0"
-                                        FontSize="14"
-                                        HorizontalAlignment="Right"
-                                        VerticalAlignment="Center" />
+                                        <!-- View profile button -->
+                                        <Button
+                                            Grid.Column="2"
+                                            Content="👤"
+                                            ToolTipService.ToolTip="View Profile"
+                                            Command="{Binding ElementName=RootControl, Path=ViewModel.ViewProfileCommand}"
+                                            CommandParameter="{x:Bind UserId}"
+                                            Background="Transparent"
+                                            Foreground="#C8ACD6"
+                                            BorderThickness="0"
+                                            CornerRadius="4"
+                                            Width="30"
+                                            Height="30"
+                                            Padding="0"
+                                            FontSize="14"
+                                            VerticalAlignment="Center" />
+                                    </Grid>
 
-                                    <!-- Admin action buttons -->
+                                    <!-- Row 2: admin action buttons (admin only) -->
                                     <StackPanel
-                                        Grid.Column="2"
                                         Orientation="Horizontal"
                                         Spacing="6"
-                                        VerticalAlignment="Center"
                                         HorizontalAlignment="Right"
-                                        Margin="0,0,34,0"
                                         Visibility="{Binding ElementName=RootControl, Path=ViewModel.IsAdmin, Converter={StaticResource BoolToVisibility}}">
                                         <Button
                                             Content="↑"
@@ -189,7 +195,7 @@
                                             FontSize="14" />
                                         <Button
                                             Content="⏱"
-                                            ToolTipService.ToolTip="Timeout (1 hour)"
+                                            ToolTipService.ToolTip="Timeout Member"
                                             Command="{Binding ElementName=RootControl, Path=ViewModel.TimeoutMemberCommand}"
                                             CommandParameter="{x:Bind UserId}"
                                             Visibility="{x:Bind IsMemberRole, Converter={StaticResource BoolToVisibility}}"
@@ -229,7 +235,8 @@
                                             Padding="0"
                                             FontSize="14" />
                                     </StackPanel>
-                                </Grid>
+
+                                </StackPanel>
                             </Border>
                         </DataTemplate>
                     </ListView.ItemTemplate>
