@@ -105,6 +105,7 @@ namespace ChatModule.Services
 
             if (remainingParticipants.Count == 0)
             {
+                await _messageRepo.DeleteByConversationAsync(conversationId);
                 await _convRepo.DeleteAsync(conversationId);
                 return;
             }

@@ -422,6 +422,21 @@ ORDER BY Participant.UserId;";
             await command.ExecuteNonQueryAsync();
         }
 
+        public async Task DeleteByConversationAsync(Guid conversationId)
+        {
+            await using var connection = new SqlConnection(_db.ConnectionString);
+            await connection.OpenAsync();
+
+            const string sql = @"
+            DELETE FROM Messages
+            WHERE ConversationId = @ConversationId;";
+
+            await using var command = new SqlCommand(sql, connection);
+            command.Parameters.AddWithValue("@ConversationId", conversationId);
+
+            await command.ExecuteNonQueryAsync();
+        }
+
         private static Message MapMessage(SqlDataReader reader)
         {
             var idOrdinal = reader.GetOrdinal("Id");

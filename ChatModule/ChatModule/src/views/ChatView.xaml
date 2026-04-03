@@ -132,9 +132,9 @@
                             Opacity="0.8"
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}}" />
 
-                        <ItemsControl
-                            ItemsSource="{Binding ReactionCounts, Converter={StaticResource ReactionCountsToDisplayList}}"
-                            Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                            <ItemsControl
+                                ItemsSource="{Binding ReactionCounts, Converter={StaticResource ReactionCountsToDisplayList}}"
+                                Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" Spacing="6" />
@@ -154,7 +154,35 @@
                                         Content="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            </ItemsControl>
+
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                            <Button
+                                Content="Reply"
+                                Command="{Binding ElementName=RootControl, Path=ViewModel.ReplyToCommand}"
+                                CommandParameter="{Binding Id}"
+                                Background="Transparent"
+                                Foreground="#C8ACD6"
+                                BorderBrush="#433D8B"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+
+                            <Button
+                                Content="Delete"
+                                Command="{Binding ElementName=RootControl, Path=ViewModel.DeleteMessageCommand}"
+                                CommandParameter="{Binding Id}"
+                                Background="Transparent"
+                                Foreground="#C8ACD6"
+                                BorderBrush="#433D8B"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+                        </StackPanel>
 
                         <Button
                             Content="+ React"
