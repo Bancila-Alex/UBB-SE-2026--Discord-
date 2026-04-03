@@ -31,9 +31,25 @@ namespace ChatModule.src.view_models
                 if (Set(ref _isPanelVisible, value))
                 {
                     OnPropertyChanged(nameof(TogglePanelIcon));
+                    OnPropertyChanged(nameof(ShowMemberContent));
                 }
             }
         }
+
+        private bool _showHeader = true;
+        public bool ShowHeader
+        {
+            get => _showHeader;
+            set
+            {
+                if (Set(ref _showHeader, value))
+                {
+                    OnPropertyChanged(nameof(ShowMemberContent));
+                }
+            }
+        }
+
+        public bool ShowMemberContent => !ShowHeader || IsPanelVisible;
 
         public string TogglePanelIcon => IsPanelVisible ? "◀" : "▶";
 

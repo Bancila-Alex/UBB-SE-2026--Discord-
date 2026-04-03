@@ -60,13 +60,13 @@ namespace ChatModule.Services
             DateTime? birthday,
             string? avatarUrl)
         {
+            ValidateRegistrationInput(username, email, password, phone, birthday);
+
             if (await _userRepository.GetByUsernameAsync(username) != null)
                 throw new InvalidOperationException("Username is already taken.");
 
             if (await _userRepository.GetByEmailAsync(email) != null)
                 throw new InvalidOperationException("Email is already taken.");
-
-            ValidateRegistrationInput(username, email, password, phone, birthday);
 
             var passwordHash = HashPassword(password);
 

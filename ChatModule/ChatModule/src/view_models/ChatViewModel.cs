@@ -304,6 +304,21 @@ namespace ChatModule.src.view_models
 
                 if (IsInputDisabled)
                 {
+                    var cannotSendReason = await _messageService.GetCannotSendReasonAsync(ConversationId, _currentUserId);
+                    if (!string.IsNullOrWhiteSpace(cannotSendReason))
+                    {
+                        InputDisabledReason = cannotSendReason;
+                        ErrorMessage = cannotSendReason;
+                    }
+                    return;
+                }
+
+                var liveCannotSendReason = await _messageService.GetCannotSendReasonAsync(ConversationId, _currentUserId);
+                if (!string.IsNullOrWhiteSpace(liveCannotSendReason))
+                {
+                    IsInputDisabled = true;
+                    InputDisabledReason = liveCannotSendReason;
+                    ErrorMessage = liveCannotSendReason;
                     return;
                 }
 
@@ -335,11 +350,11 @@ namespace ChatModule.src.view_models
                 await PopulateReadReceiptMetadataAsync();
                 await UpdateUnreadSeparatorAsync();
 
-                var cannotSendReason = await _messageService.GetCannotSendReasonAsync(ConversationId, _currentUserId);
-                if (!string.IsNullOrWhiteSpace(cannotSendReason))
+                var postSendCannotSendReason = await _messageService.GetCannotSendReasonAsync(ConversationId, _currentUserId);
+                if (!string.IsNullOrWhiteSpace(postSendCannotSendReason))
                 {
                     IsInputDisabled = true;
-                    InputDisabledReason = cannotSendReason;
+                    InputDisabledReason = postSendCannotSendReason;
                 }
             }
             catch (Exception ex)
@@ -712,14 +727,9 @@ namespace ChatModule.src.view_models
                 }
                 else
                 {
-                    if (otherReaders <= 0)
-                    {
-                        message.ReadReceiptLabel = null;
-                    }
-                    else
-                    {
-                        message.ReadReceiptLabel = $"Read by {otherReaders}/{Math.Max(1, participantCount - 1)}";
-                    }
+                    message.ReadReceiptLabel = otherReaders <= 0
+                        ? null
+                        : $"Seen by {otherReaders}/{Math.Max(1, participantCount - 1)}";
                 }
             }
 
@@ -737,42 +747,52 @@ namespace ChatModule.src.view_models
             }
 
             var lastReadMessageId = await _readReceiptService.GetLastReadMessageAsync(ConversationId, _currentUserId);
+            var firstUnread = default(Message);
+            var unreadCount = 0;
+
             if (!lastReadMessageId.HasValue)
             {
-                FirstUnreadMessage = Messages.FirstOrDefault();
-                UnreadSeparatorCount = Messages.Count;
-                ApplyUnreadSeparatorFlag();
-                return;
-            }
-
-            var lastReadIndex = -1;
-            for (var i = 0; i < Messages.Count; i++)
-            {
-                if (Messages[i].Id == lastReadMessageId.Value)
+                foreach (var message in Messages)
                 {
-                    lastReadIndex = i;
-                    break;
+                    if (message.UserId == _currentUserId)
+                    {
+                        continue;
+                    }
+
+                    firstUnread ??= message;
+                    unreadCount++;
                 }
-            }
 
-            if (lastReadIndex < 0)
-            {
-                FirstUnreadMessage = null;
-                UnreadSeparatorCount = 0;
+                FirstUnreadMessage = firstUnread;
+                UnreadSeparatorCount = unreadCount;
                 ApplyUnreadSeparatorFlag();
                 return;
             }
 
-            if (lastReadIndex >= Messages.Count - 1)
+            var crossedLastRead = false;
+            foreach (var message in Messages)
             {
-                FirstUnreadMessage = null;
-                UnreadSeparatorCount = 0;
-                ApplyUnreadSeparatorFlag();
-                return;
+                if (!crossedLastRead)
+                {
+                    if (message.Id == lastReadMessageId.Value)
+                    {
+                        crossedLastRead = true;
+                    }
+
+                    continue;
+                }
+
+                if (message.UserId == _currentUserId)
+                {
+                    continue;
+                }
+
+                firstUnread ??= message;
+                unreadCount++;
             }
 
-            FirstUnreadMessage = Messages[lastReadIndex + 1];
-            UnreadSeparatorCount = Messages.Count - (lastReadIndex + 1);
+            FirstUnreadMessage = firstUnread;
+            UnreadSeparatorCount = unreadCount;
             ApplyUnreadSeparatorFlag();
         }
 

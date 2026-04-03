@@ -15,6 +15,7 @@ namespace ChatModule.src.views
 
             if (viewModel.ContentViewModel is MemberPanelViewModel memberPanelViewModel)
             {
+                memberPanelViewModel.ShowHeader = false;
                 PanelContentHost.Content = new MemberPanelView(memberPanelViewModel);
             }
             else if (viewModel.ContentViewModel is ProfileViewModel profileViewModel)

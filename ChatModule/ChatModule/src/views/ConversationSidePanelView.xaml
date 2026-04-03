@@ -46,7 +46,7 @@
                         BorderThickness="0"
                         Padding="8,2"
                         FontSize="14"
-                        Visibility="{x:Bind ViewModel.IsPanelVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        Visibility="Collapsed" />
                 </Grid>
             </Border>
 

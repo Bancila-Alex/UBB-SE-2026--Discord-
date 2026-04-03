@@ -51,7 +51,7 @@
         <ScrollViewer
             Grid.Row="1"
             VerticalScrollBarVisibility="Auto"
-            Visibility="{x:Bind ViewModel.IsPanelVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+            Visibility="{x:Bind ViewModel.ShowMemberContent, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
             <StackPanel Spacing="8" Padding="8,8,8,12">
 
                 <!-- Loading indicator -->
