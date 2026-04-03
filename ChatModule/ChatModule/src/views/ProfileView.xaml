@@ -8,13 +8,15 @@
 
     <UserControl.Resources>
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
     </UserControl.Resources>
 
     <Grid Background="#17153B">
         <Border
-            Width="560"
-            HorizontalAlignment="Center"
+            HorizontalAlignment="Stretch"
             VerticalAlignment="Center"
+            Margin="12"
+            MaxWidth="560"
             Background="#2E236C"
             CornerRadius="10"
             Padding="22"
@@ -36,29 +38,46 @@
 
                     <Grid Grid.Column="0" Margin="0,0,16,0">
                         <Ellipse Width="84" Height="84" Fill="#433D8B" />
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontSize="0.1"
-                            Opacity="0" />
+                        <Image
+                            Width="84"
+                            Height="84"
+                            Source="{x:Bind ViewModel.EditAvatarUrl, Mode=OneWay, Converter={StaticResource StringToImageSource}}"
+                            Stretch="UniformToFill" />
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="6">
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                            FontSize="18"
-                            FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock
+                                Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
+                                Foreground="#C8ACD6"
+                                FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                FontSize="18"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                Text="🎂"
+                                FontSize="18"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
 
                         <Button
                             Content="Upload Avatar"
+                            Click="OnUploadAvatarClicked"
                             Background="#433D8B"
                             Foreground="#C8ACD6"
                             BorderThickness="0"
                             CornerRadius="4"
                             HorizontalAlignment="Left"
                             Padding="12,6" />
+
+                        <TextBlock
+                            Text="{x:Bind ViewModel.EditAvatarUrl, Mode=OneWay}"
+                            Foreground="#C8ACD6"
+                            Opacity="0.75"
+                            MaxLines="1"
+                            TextTrimming="CharacterEllipsis"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                            FontSize="12" />
                     </StackPanel>
                 </Grid>
 
@@ -113,21 +132,12 @@
                             FontSize="14"
                             FontWeight="SemiBold" />
 
-                        <Grid>
-                            <DatePicker
-                                Date="{x:Bind ViewModel.EditBirthdayOffset, Mode=TwoWay}"
-                                Background="#433D8B"
-                                Foreground="#C8ACD6"
-                                BorderThickness="0"
-                                FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
-                            <TextBlock
-                                Text="🎂"
-                                FontSize="18"
-                                HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                Margin="0,0,8,0"
-                                Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                        </Grid>
+                        <DatePicker
+                            Date="{x:Bind ViewModel.EditBirthdayOffset, Mode=TwoWay}"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans" />
                     </StackPanel>
                 </Grid>
 
@@ -147,9 +157,10 @@
         </Border>
 
         <Border
-            Width="560"
-            HorizontalAlignment="Center"
+            HorizontalAlignment="Stretch"
             VerticalAlignment="Center"
+            Margin="12"
+            MaxWidth="560"
             Background="#2E236C"
             CornerRadius="10"
             Padding="22"
@@ -171,20 +182,27 @@
 
                     <Grid Grid.Column="0" Margin="0,0,16,0">
                         <Ellipse Width="84" Height="84" Fill="#433D8B" />
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.AvatarUrl, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontSize="0.1"
-                            Opacity="0" />
+                        <Image
+                            Width="84"
+                            Height="84"
+                            Source="{x:Bind ViewModel.User.AvatarUrl, Mode=OneWay, Converter={StaticResource StringToImageSource}}"
+                            Stretch="UniformToFill" />
                     </Grid>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="8">
-                        <TextBlock
-                            Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                            FontSize="18"
-                            FontWeight="SemiBold" />
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <TextBlock
+                                Text="{x:Bind ViewModel.User.Username, Mode=OneWay}"
+                                Foreground="#C8ACD6"
+                                FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                FontSize="18"
+                                FontWeight="SemiBold" />
+                            <TextBlock
+                                Text="🎂"
+                                FontSize="18"
+                                VerticalAlignment="Center"
+                                Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
 
                         <Border
                             Background="#433D8B"
@@ -228,20 +246,11 @@
                         FontSize="14"
                         FontWeight="SemiBold" />
 
-                    <Grid>
-                        <TextBlock
-                            Text="{x:Bind ViewModel.BirthdayText, Mode=OneWay}"
-                            Foreground="#C8ACD6"
-                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                            FontSize="14" />
-                        <TextBlock
-                            Text="🎂"
-                            FontSize="18"
-                            HorizontalAlignment="Right"
-                            VerticalAlignment="Center"
-                            Margin="0,0,8,0"
-                            Visibility="{x:Bind ViewModel.IsBirthdayToday, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
-                    </Grid>
+                    <TextBlock
+                        Text="{x:Bind ViewModel.BirthdayText, Mode=OneWay}"
+                        Foreground="#C8ACD6"
+                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                        FontSize="14" />
                 </StackPanel>
 
                 <Button
@@ -268,7 +277,14 @@
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="models:User">
                             <StackPanel Orientation="Horizontal" Spacing="8" Padding="6,4">
-                                <Ellipse Width="28" Height="28" Fill="#433D8B" />
+                                <Grid Width="28" Height="28">
+                                    <Ellipse Fill="#433D8B" />
+                                    <Image
+                                        Width="28"
+                                        Height="28"
+                                        Source="{x:Bind AvatarUrl, Converter={StaticResource StringToImageSource}}"
+                                        Stretch="UniformToFill" />
+                                </Grid>
                                 <TextBlock
                                     Text="{x:Bind Username}"
                                     Foreground="#C8ACD6"

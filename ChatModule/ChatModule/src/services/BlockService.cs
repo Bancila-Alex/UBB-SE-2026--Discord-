@@ -20,11 +20,49 @@ namespace ChatModule.Services
 
         public async Task BlockUserAsync(Guid blockerId, Guid targetId)
         {
+            var relation = await _friendRepository.GetAsync(blockerId, targetId);
+            if (relation == null)
+            {
+                await _friendRepository.CreateAsync(new Friend
+                {
+                    Id = Guid.NewGuid(),
+                    UserId1 = blockerId,
+                    UserId2 = targetId,
+                    Status = FriendStatus.Blocked,
+                    IsMatch = false,
+                    CreatedAt = DateTime.UtcNow
+                });
+
+                return;
+            }
+
+            if (relation.Status == FriendStatus.Accepted)
+            {
+                await _friendRepository.SetMatchAsync(blockerId, targetId, true);
+            }
+            else if (relation.Status == FriendStatus.Pending)
+            {
+                await _friendRepository.SetMatchAsync(blockerId, targetId, false);
+            }
+
             await _friendRepository.UpdateStatusAsync(blockerId, targetId, FriendStatus.Blocked);
         }
 
         public async Task UnblockUserAsync(Guid blockerId, Guid targetId)
         {
+            var relation = await _friendRepository.GetAsync(blockerId, targetId);
+            if (relation == null)
+            {
+                return;
+            }
+
+            if (relation.Status == FriendStatus.Blocked)
+            {
+                var restoredStatus = relation.IsMatch ? FriendStatus.Accepted : FriendStatus.Pending;
+                await _friendRepository.UpdateStatusAsync(blockerId, targetId, restoredStatus);
+                return;
+            }
+
             await _friendRepository.DeleteAsync(blockerId, targetId);
         }
 

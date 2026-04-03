@@ -29,12 +29,30 @@ namespace ChatModule.Services
         {
             var message = await _messageRepo.GetByIdAsync(messageId)
                 ?? throw new InvalidOperationException("Message not found.");
+
+            if (string.IsNullOrWhiteSpace(emoji))
+            {
+                throw new InvalidOperationException("Reaction cannot be empty.");
+            }
+
+            if (message.MessageType == MessageType.Reaction)
+            {
+                throw new InvalidOperationException("You cannot react to a reaction message.");
+            }
+
             await RequireCanSendAsync(message.ConversationId, userId);
             var existingReactions = await _messageRepo.GetReactionsForMessageAsync(messageId);
-            if (existingReactions.Any(r => r.UserId == userId))
+            var existingActive = existingReactions.FirstOrDefault(r => r.UserId == userId && !r.IsDeleted);
+            var existingDeleted = existingReactions.FirstOrDefault(r => r.UserId == userId && r.IsDeleted);
+
+            if (existingActive != null)
             {
-                var existing = existingReactions.First(r => r.UserId == userId);
-                await _messageRepo.UpdateContentAsync(existing.Id, emoji);
+                await _messageRepo.UpdateContentAsync(existingActive.Id, emoji);
+            }
+            else if (existingDeleted != null)
+            {
+                await _messageRepo.UpdateContentAsync(existingDeleted.Id, emoji);
+                await _messageRepo.UnsoftDeleteAsync(existingDeleted.Id);
             }
             else await _messageRepo.CreateAsync(new Message
             {
@@ -57,9 +75,9 @@ namespace ChatModule.Services
                 ?? throw new InvalidOperationException("Message not found.");
             await RequireCanSendAsync(message.ConversationId, userId);
             var existingReactions = await _messageRepo.GetReactionsForMessageAsync(messageId);
-            if (existingReactions.Any(r => r.UserId == userId))
+            if (existingReactions.Any(r => r.UserId == userId && !r.IsDeleted))
             {
-                var existing = existingReactions.First(r => r.UserId == userId);
+                var existing = existingReactions.First(r => r.UserId == userId && !r.IsDeleted);
                 await _messageRepo.SoftDeleteAsync(existing.Id);
             }
             else
@@ -100,6 +118,38 @@ namespace ChatModule.Services
                 ? (message.Content.Length > 100 ? message.Content.Substring(0, 100) + "..." : message.Content)
                 : "[No Text]";
             return $"{senderName}: {contentPreview}";
+        }
+
+        public async Task<(string Sender, string Content)?> BuildReplyPreviewPartsAsync(Guid messageId)
+        {
+            var message = await _messageRepo.GetByIdAsync(messageId)
+                ?? throw new InvalidOperationException("Message not found.");
+
+            if (message.IsDeleted)
+            {
+                return ("Deleted", "This message has been deleted.");
+            }
+
+            if (message.MessageType == MessageType.Reaction)
+            {
+                return ("Reaction", "This is a reaction and cannot be previewed.");
+            }
+
+            var senderName = "Unknown User";
+            if (message.UserId.HasValue)
+            {
+                var user = await _userRepo.GetByIdAsync(message.UserId.Value);
+                if (user != null)
+                {
+                    senderName = user.Username;
+                }
+            }
+
+            var contentPreview = message.Content != null
+                ? (message.Content.Length > 100 ? message.Content.Substring(0, 100) + "..." : message.Content)
+                : "[No Text]";
+
+            return (senderName, contentPreview);
         }
 
         private async Task<Participant> RequireActiveParticipantAsync(Guid conversationId, Guid userId)

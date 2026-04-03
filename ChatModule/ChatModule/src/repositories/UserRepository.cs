@@ -199,17 +199,27 @@ WHERE Id = @Id;";
 
         private static User MapUser(SqlDataReader reader)
         {
+            var idOrdinal = reader.GetOrdinal("Id");
+            var usernameOrdinal = reader.GetOrdinal("Username");
+            var emailOrdinal = reader.GetOrdinal("Email");
+            var passwordHashOrdinal = reader.GetOrdinal("PasswordHash");
+            var avatarUrlOrdinal = reader.GetOrdinal("AvatarUrl");
+            var bioOrdinal = reader.GetOrdinal("Bio");
+            var statusOrdinal = reader.GetOrdinal("Status");
+            var birthdayOrdinal = reader.GetOrdinal("Birthday");
+            var phoneOrdinal = reader.GetOrdinal("Phone");
+
             return new User
             {
-                Id = reader.GetGuid("Id"),
-                Username = reader.GetString("Username"),
-                Email = reader.GetString("Email"),
-                PasswordHash = reader.GetString("PasswordHash"),
-                AvatarUrl = reader.IsDBNull(reader.GetOrdinal("AvatarUrl")) ? null : reader.GetString("AvatarUrl"),
-                Bio = reader.IsDBNull(reader.GetOrdinal("Bio")) ? null : reader.GetString("Bio"),
-                Status = (UserStatus)reader.GetInt32("Status"),
-                Birthday = reader.IsDBNull(reader.GetOrdinal("Birthday")) ? null : reader.GetDateTime("Birthday"),
-                Phone = reader.IsDBNull(reader.GetOrdinal("Phone")) ? null : reader.GetString("Phone"),
+                Id = reader.GetGuid(idOrdinal),
+                Username = reader.GetString(usernameOrdinal),
+                Email = reader.GetString(emailOrdinal),
+                PasswordHash = reader.GetString(passwordHashOrdinal),
+                AvatarUrl = reader.IsDBNull(avatarUrlOrdinal) ? null : reader.GetString(avatarUrlOrdinal),
+                Bio = reader.IsDBNull(bioOrdinal) ? null : reader.GetString(bioOrdinal),
+                Status = (UserStatus)reader.GetByte(statusOrdinal),
+                Birthday = reader.IsDBNull(birthdayOrdinal) ? null : reader.GetDateTime(birthdayOrdinal),
+                Phone = reader.IsDBNull(phoneOrdinal) ? null : reader.GetString(phoneOrdinal),
             };
         }
     }

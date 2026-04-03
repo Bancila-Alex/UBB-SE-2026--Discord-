@@ -65,6 +65,7 @@ public class RegisterViewModel : BaseViewModel
     public RelayCommand BackToLoginCommand { get; }
 
     public event Action? NavigateToLoginRequested;
+    public event Func<Guid, string, Task>? RegisterSucceeded;
 
     public RegisterViewModel(AuthService authService)
     {
@@ -75,11 +76,29 @@ public class RegisterViewModel : BaseViewModel
 
     private async Task RegisterAsync()
     {
+        if (string.IsNullOrWhiteSpace(Username) || Username.Trim().Length < 5 || Username.Trim().Length > 16)
+        {
+            ErrorMessage = "Username must be between 5 and 16 characters.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Password) || Password.Length < 8 || Password.Length > 32)
+        {
+            ErrorMessage = "Password must be 8-32 chars and include uppercase, number, and special character.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Email))
+        {
+            ErrorMessage = "Invalid email format.";
+            return;
+        }
+
         IsLoading = true;
         ErrorMessage = null;
         try
         {
-            await _authService.RegisterAsync(
+            var user = await _authService.RegisterAsync(
                 Username,
                 Email,
                 Password,
@@ -87,7 +106,15 @@ public class RegisterViewModel : BaseViewModel
                 Birthday,
                 null // avatarUrl
             );
-            NavigateToLoginRequested?.Invoke();
+
+            if (RegisterSucceeded != null)
+            {
+                await RegisterSucceeded(user.Id, user.Username);
+            }
+            else
+            {
+                NavigateToLoginRequested?.Invoke();
+            }
         }
         catch (Exception ex)
         {

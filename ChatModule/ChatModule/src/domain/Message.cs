@@ -17,6 +17,20 @@ namespace ChatModule.Models
         public MessageType MessageType { get; set; }
         public Guid? ParentMessageId { get; set; }
         public string? SenderUsername { get; set; }
+        public string? SenderAvatarUrl { get; set; }
+        public string SenderInitial => !string.IsNullOrWhiteSpace(SenderUsername)
+            ? SenderUsername.Substring(0, 1).ToUpperInvariant()
+            : "?";
         public Dictionary<string, int> ReactionCounts { get; set; } = new();
+        public bool IsMine { get; set; }
+        public int ReadByCount { get; set; }
+        public string? ReadReceiptLabel { get; set; }
+        public bool ShowUnreadSeparator { get; set; }
+        public string? AttachmentImagePath { get; set; }
+        public string? ReplyPreviewText { get; set; }
+        public string? ReplyPreviewSender { get; set; }
+        public string? ReplyPreviewContent { get; set; }
+        public bool CanEdit { get; set; }
+        public bool CanDelete { get; set; }
     }
 }

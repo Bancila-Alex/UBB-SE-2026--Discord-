@@ -10,28 +10,68 @@
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:BooleanToVisibilityConverter x:Key="BoolToVisibility" />
         <converters:InverseBooleanConverter x:Key="InverseBoolean" />
+        <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
         <converters:ReactionCountsToDisplayListConverter x:Key="ReactionCountsToDisplayList" />
 
         <DataTemplate x:Key="MessageItemTemplate">
-            <Grid Margin="0,4" ColumnSpacing="10">
+            <Grid Margin="0,6" ColumnSpacing="10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="40" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+
                 <Border
+                    Grid.ColumnSpan="2"
+                    Grid.Row="0"
+                    Background="#433D8B"
+                    CornerRadius="6"
+                    Padding="8,4"
+                    Margin="0,0,0,6"
+                    Visibility="{Binding ShowUnreadSeparator, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock
+                        Text="Unread"
+                        Foreground="#C8ACD6"
+                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                        FontSize="11"
+                        FontWeight="SemiBold" />
+                </Border>
+
+                <Border
+                    Grid.Row="1"
                     Width="36"
                     Height="36"
                     Background="#433D8B"
                     CornerRadius="18"
                     VerticalAlignment="Top">
-                    <TextBlock
-                        Text="{Binding UserId}"
-                        FontSize="0.1"
-                        Opacity="0" />
+                    <Grid>
+                        <Image
+                            Source="{Binding SenderAvatarUrl, Converter={StaticResource StringToImageSource}}"
+                            Stretch="UniformToFill"
+                            Width="36"
+                            Height="36"
+                            Visibility="{Binding SenderAvatarUrl, Converter={StaticResource NullToVisibility}}" />
+
+                        <TextBlock
+                            Text="{Binding SenderInitial}"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                            FontSize="14"
+                            FontWeight="SemiBold"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Visibility="{Binding SenderAvatarUrl, Converter={StaticResource NullToVisibility}, ConverterParameter=Invert}" />
+                    </Grid>
                 </Border>
 
                 <Border
+                    Grid.Row="1"
                     Grid.Column="1"
                     Padding="10,8"
                     Background="#2E236C"
@@ -44,7 +84,7 @@
                             </Grid.ColumnDefinitions>
 
                             <TextBlock
-                                Text="{Binding UserId}"
+                                Text="{Binding SenderUsername}"
                                 Foreground="#C8ACD6"
                                 FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
                                 FontSize="13"
@@ -76,6 +116,43 @@
                             TextWrapping="Wrap"
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
 
+                        <Button
+                            Tag="{Binding ReplyToId}"
+                            Tapped="OnReplyPreviewTapped"
+                            Background="#433D8B"
+                            Foreground="#C8ACD6"
+                            BorderThickness="0"
+                            CornerRadius="6"
+                            Padding="8,5"
+                            HorizontalAlignment="Stretch"
+                            HorizontalContentAlignment="Left"
+                            Visibility="{Binding ReplyPreviewText, Converter={StaticResource NullToVisibility}}">
+                            <StackPanel Spacing="1">
+                                <TextBlock
+                                    Text="{Binding ReplyPreviewSender}"
+                                    Foreground="#C8ACD6"
+                                    FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                                    FontSize="12"
+                                    FontWeight="SemiBold"
+                                    TextTrimming="CharacterEllipsis" />
+                                <TextBlock
+                                    Text="{Binding ReplyPreviewContent}"
+                                    Foreground="#C8ACD6"
+                                    Opacity="0.9"
+                                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                                    FontSize="12"
+                                    MaxLines="1"
+                                    TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                        </Button>
+
+                        <Image
+                            Source="{Binding AttachmentImagePath, Converter={StaticResource StringToImageSource}}"
+                            MaxWidth="300"
+                            MaxHeight="220"
+                            Stretch="UniformToFill"
+                            Visibility="{Binding AttachmentImagePath, Converter={StaticResource NullToVisibility}}" />
+
                         <TextBlock
                             Text="This message was deleted"
                             Foreground="#C8ACD6"
@@ -85,9 +162,9 @@
                             Opacity="0.8"
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}}" />
 
-                        <ItemsControl
-                            ItemsSource="{Binding ReactionCounts, Converter={StaticResource ReactionCountsToDisplayList}}"
-                            Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
+                            <ItemsControl
+                                ItemsSource="{Binding ReactionCounts, Converter={StaticResource ReactionCountsToDisplayList}}"
+                                Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
                                     <StackPanel Orientation="Horizontal" Spacing="6" />
@@ -96,7 +173,7 @@
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
                                     <Button
-                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ReactCommand}"
+                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ToggleReactionCounterCommand}"
                                         CommandParameter="{Binding DataContext.Id, ElementName=MessageContentRoot}"
                                         Background="#433D8B"
                                         Foreground="#C8ACD6"
@@ -107,7 +184,48 @@
                                         Content="{Binding}" />
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
-                        </ItemsControl>
+                            </ItemsControl>
+
+                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,2,0,0">
+                            <Button
+                                Content="Reply"
+                                Command="{Binding ElementName=RootControl, Path=ViewModel.ReplyToCommand}"
+                                CommandParameter="{Binding Id}"
+                                Background="Transparent"
+                                Foreground="#C8ACD6"
+                                BorderBrush="#433D8B"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
+
+                            <Button
+                                Content="Edit"
+                                Command="{Binding ElementName=RootControl, Path=ViewModel.EditMessageCommand}"
+                                CommandParameter="{Binding Id}"
+                                Background="Transparent"
+                                Foreground="#C8ACD6"
+                                BorderBrush="#433D8B"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding CanEdit, Converter={StaticResource BoolToVisibility}}" />
+
+                            <Button
+                                Content="Delete"
+                                Command="{Binding ElementName=RootControl, Path=ViewModel.DeleteMessageCommand}"
+                                CommandParameter="{Binding Id}"
+                                Background="Transparent"
+                                Foreground="#C8ACD6"
+                                BorderBrush="#433D8B"
+                                BorderThickness="1"
+                                CornerRadius="10"
+                                Padding="8,3"
+                                HorizontalAlignment="Left"
+                                Visibility="{Binding CanDelete, Converter={StaticResource BoolToVisibility}}" />
+                        </StackPanel>
 
                         <Button
                             Content="+ React"
@@ -123,108 +241,185 @@
                             Visibility="{Binding IsDeleted, Converter={StaticResource BoolToVisibility}, ConverterParameter=Invert}" />
                     </StackPanel>
                 </Border>
+
+                <TextBlock
+                    Grid.Column="1"
+                    Grid.Row="2"
+                    Text="{Binding ReadReceiptLabel}"
+                    Tapped="OnReadReceiptTapped"
+                    Foreground="#C8ACD6"
+                    Opacity="0.75"
+                    FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                    FontSize="11"
+                    Margin="6,4,0,0"
+                    Tag="{Binding Id}"
+                    Visibility="{Binding ReadReceiptLabel, Converter={StaticResource NullToVisibility}}" />
             </Grid>
         </DataTemplate>
     </UserControl.Resources>
 
     <Grid Background="#17153B">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="260" />
+        </Grid.ColumnDefinitions>
 
-        <!-- Header -->
-        <Border Grid.Row="0" Background="#2E236C" Padding="16,12">
-            <TextBlock
-                Text="{x:Bind ViewModel.ConversationTitle, Mode=OneWay}"
-                Foreground="#C8ACD6"
-                FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
-                FontSize="18"
-                FontWeight="SemiBold" />
-        </Border>
-
-        <!-- Chat Area -->
-        <Grid Grid.Row="1">
-            <ListView
-                ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
-                ItemTemplate="{StaticResource MessageItemTemplate}"
-                Background="Transparent"
-                Padding="8,36,8,8"
-                SelectionMode="None" />
-
-            <Button
-                HorizontalAlignment="Stretch"
-                VerticalAlignment="Top"
-                Command="{x:Bind ViewModel.ScrollToMessageCommand}"
-                CommandParameter="{x:Bind ViewModel.PinnedMessage.Id, Mode=OneWay}"
-                Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
-                Background="#433D8B"
-                Foreground="#C8ACD6"
-                BorderThickness="0"
-                Padding="12,6"
-                HorizontalContentAlignment="Stretch">
-                <StackPanel Orientation="Horizontal" Spacing="6">
-                    <TextBlock
-                        Text="📌"
-                        FontSize="13"
-                        VerticalAlignment="Center" />
-                    <TextBlock
-                        Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
-                        Foreground="#C8ACD6"
-                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                        FontSize="13"
-                        MaxLines="1"
-                        TextTrimming="CharacterEllipsis"
-                        VerticalAlignment="Center" />
-                </StackPanel>
-            </Button>
-        </Grid>
-
-        <!-- Reply Context Strip -->
-        <Border
-            Grid.Row="2"
-            Background="#2E236C"
-            Padding="12,6"
-            Visibility="{x:Bind ViewModel.ReplyingTo, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="Auto" />
-                </Grid.ColumnDefinitions>
-                <StackPanel Grid.Column="0">
-                    <TextBlock
-                        Text="Replying to:"
-                        Foreground="#C8ACD6"
-                        FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
-                        FontSize="11"
-                        Opacity="0.7" />
-                    <TextBlock
-                        Text="{x:Bind ViewModel.ReplyingTo.Content, Mode=OneWay}"
-                        Foreground="#C8ACD6"
-                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
-                        FontSize="13"
-                        MaxLines="1"
-                        TextTrimming="CharacterEllipsis" />
-                </StackPanel>
-                <Button
-                    Grid.Column="1"
-                    Content="✕"
-                    Command="{x:Bind ViewModel.CancelReplyCommand}"
-                    Background="Transparent"
-                    Foreground="#C8ACD6"
-                    BorderThickness="0" />
-            </Grid>
-        </Border>
-
-        <!-- Bottom Input Section -->
-        <Grid Grid.Row="3" Background="#2E236C" Padding="8">
+        <Grid Grid.Column="0">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Border Grid.Row="0" Background="#2E236C" Padding="18,14">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock
+                        Grid.Column="0"
+                        Text="{x:Bind ViewModel.ConversationTitle, Mode=OneWay}"
+                        Foreground="#C8ACD6"
+                        FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
+                        FontSize="18"
+                        FontWeight="SemiBold" />
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Search"
+                        Command="{x:Bind ViewModel.OpenSearchCommand}"
+                        Background="#433D8B"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0"
+                        CornerRadius="4"
+                        Padding="12,6" />
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Nickname"
+                        Click="OnSetNicknameClicked"
+                        Background="#2E236C"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#433D8B"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        Margin="90,0,0,0"
+                        Visibility="{x:Bind ViewModel.IsConversationGroup, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Clear Nickname"
+                        Click="OnClearNicknameClicked"
+                        Background="#2E236C"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#433D8B"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        Margin="200,0,0,0"
+                        Visibility="{x:Bind ViewModel.IsConversationGroup, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Leave"
+                        Click="OnLeaveGroupClicked"
+                        Background="#2E236C"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#433D8B"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        Margin="340,0,0,0"
+                        Visibility="{x:Bind ViewModel.IsConversationGroup, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+                </Grid>
+            </Border>
+
+            <!-- Chat Area -->
+            <Grid Grid.Row="1">
+                <ListView
+                    x:Name="MessagesList"
+                    ItemsSource="{x:Bind ViewModel.Messages, Mode=OneWay}"
+                    ItemTemplate="{StaticResource MessageItemTemplate}"
+                    Background="Transparent"
+                    Padding="20,52,20,16"
+                    SelectionMode="None" />
+
+                <Button
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Top"
+                    Command="{x:Bind ViewModel.ScrollToMessageCommand}"
+                    CommandParameter="{x:Bind ViewModel.PinnedMessage.Id, Mode=OneWay}"
+                    Visibility="{x:Bind ViewModel.PinnedMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}"
+                    Background="#433D8B"
+                    Foreground="#C8ACD6"
+                    BorderThickness="0"
+                    Padding="14,8"
+                    HorizontalContentAlignment="Stretch">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock
+                            Text="📌"
+                            FontSize="13"
+                            VerticalAlignment="Center" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.PinnedMessage.Content, Mode=OneWay}"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                            FontSize="13"
+                            MaxLines="1"
+                            TextTrimming="CharacterEllipsis"
+                            VerticalAlignment="Center" />
+                    </StackPanel>
+                </Button>
+            </Grid>
+
+            <!-- Reply Context Strip -->
+            <Border
+                Grid.Row="2"
+                Background="#2E236C"
+                Padding="12,6"
+                Visibility="{x:Bind ViewModel.ReplyingTo, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock
+                            Text="Replying to:"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/Ubuntu-Regular.ttf#Ubuntu"
+                            FontSize="11"
+                            Opacity="0.7" />
+                        <TextBlock
+                            Text="{x:Bind ViewModel.ReplyingTo.Content, Mode=OneWay}"
+                            Foreground="#C8ACD6"
+                            FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                            FontSize="13"
+                            MaxLines="1"
+                            TextTrimming="CharacterEllipsis" />
+                    </StackPanel>
+                    <Button
+                        Grid.Column="1"
+                        Content="✕"
+                        Command="{x:Bind ViewModel.CancelReplyCommand}"
+                        Background="Transparent"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0" />
+                </Grid>
+            </Border>
+
+            <!-- Bottom Input Section -->
+            <Grid Grid.Row="3" Background="#2E236C" Padding="14,10">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
 
             <TextBlock
                 Grid.Row="0"
@@ -235,6 +430,44 @@
                 Opacity="0.9"
                 Margin="2,0,2,6"
                 Visibility="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+            <TextBlock
+                Grid.Row="0"
+                Text="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                Foreground="#FF8A8A"
+                FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                FontSize="12"
+                Margin="2,20,2,0"
+                Visibility="{x:Bind ViewModel.ErrorMessage, Mode=OneWay, Converter={StaticResource NullToVisibility}}" />
+
+            <Border
+                Grid.Row="1"
+                Background="#2E236C"
+                CornerRadius="4"
+                Padding="8,6"
+                Margin="0,0,0,6"
+                Visibility="{x:Bind ViewModel.SelectedAttachmentName, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock
+                        Text="{x:Bind ViewModel.SelectedAttachmentName, Mode=OneWay}"
+                        Foreground="#C8ACD6"
+                        TextTrimming="CharacterEllipsis"
+                        FontFamily="ms-appx:///Assets/Fonts/NotoSans-Regular.ttf#Noto Sans"
+                        FontSize="12" />
+                    <Button
+                        Grid.Column="1"
+                        Content="✕"
+                        Click="OnClearAttachmentClicked"
+                        Background="Transparent"
+                        Foreground="#C8ACD6"
+                        BorderThickness="0"
+                        Padding="6,0" />
+                </Grid>
+            </Border>
 
             <ListBox
                 Grid.Row="1"
@@ -273,14 +506,29 @@
                 </ListBox.ItemTemplate>
             </ListBox>
 
-            <Grid Grid.Row="2">
+            <Grid Grid.Row="2" ColumnSpacing="8">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
 
-                <TextBox
+                <Button
                     Grid.Column="0"
+                    Content="📎"
+                    Click="OnAttachClicked"
+                    Background="#433D8B"
+                    Foreground="#C8ACD6"
+                    BorderThickness="0"
+                    CornerRadius="4"
+                    Width="42"
+                    Height="36"
+                    Padding="0"
+                    Margin="0,0,4,0"
+                    IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}" />
+
+                <TextBox
+                    Grid.Column="1"
                     Text="{x:Bind ViewModel.MessageInput, Mode=TwoWay}"
                     PlaceholderText="Type a message..."
                     Background="#433D8B"
@@ -293,17 +541,45 @@
                     IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}" />
 
                 <Button
-                    Grid.Column="1"
+                    Grid.Column="2"
                     Content="Send"
                     Command="{x:Bind ViewModel.SendCommand}"
                     IsEnabled="{x:Bind ViewModel.IsInputDisabled, Mode=OneWay, Converter={StaticResource InverseBoolean}}"
                     Background="#433D8B"
                     Foreground="#C8ACD6"
                     FontFamily="ms-appx:///Assets/Fonts/SourceSans3-Regular.ttf#Source Sans 3"
-                    Margin="6,0,0,0"
+                    Margin="8,0,0,0"
                     Padding="16,8"
                     CornerRadius="4" />
             </Grid>
         </Grid>
+
+            <Grid
+                Grid.RowSpan="4"
+                Background="#80000000"
+                Visibility="{x:Bind ViewModel.IsSearchVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
+                <Border
+                    Width="520"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Stretch"
+                    Background="#17153B"
+                    BorderBrush="#433D8B"
+                    BorderThickness="1,0,0,0">
+                    <ContentControl
+                        x:Name="SearchPanelHost"
+                        HorizontalContentAlignment="Stretch"
+                        VerticalContentAlignment="Stretch"
+                        Loaded="OnSearchPanelLoaded" />
+                </Border>
+            </Grid>
+        </Grid>
+
+        <Border
+            Grid.Column="1"
+            Background="#17153B"
+            BorderBrush="#2E236C"
+            BorderThickness="1,0,0,0">
+            <ContentControl x:Name="SidePanelHost" />
+        </Border>
     </Grid>
 </UserControl>

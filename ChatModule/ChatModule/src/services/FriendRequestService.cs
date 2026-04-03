@@ -29,6 +29,11 @@ namespace ChatModule.Services
 
         public async Task SendRequestAsync(Guid senderId, Guid receiverId)
         {
+            if (senderId == receiverId)
+            {
+                throw new InvalidOperationException("You cannot send a friend request to yourself.");
+            }
+
             var alreadyFriends = await _friendRepository.IsFriendAsync(senderId, receiverId);
             if (alreadyFriends)
             {
@@ -38,10 +43,17 @@ namespace ChatModule.Services
             var existingRelation = await _friendRepository.GetAsync(senderId, receiverId);
             if (existingRelation != null)
             {
+                if (existingRelation.Status == FriendStatus.Blocked)
+                {
+                    await _friendRepository.UpdateStatusAsync(senderId, receiverId, FriendStatus.Pending);
+                    await _friendRepository.SetMatchAsync(senderId, receiverId, false);
+                    return;
+                }
+
                 throw new InvalidOperationException("A friend request already exists between these users.");
             }
 
-            _friendRepository.CreateAsync(new Friend
+            await _friendRepository.CreateAsync(new Friend
             {
                 Id = Guid.NewGuid(),
                 UserId1 = senderId,
@@ -50,6 +62,23 @@ namespace ChatModule.Services
                 IsMatch = false,
                 CreatedAt = DateTime.UtcNow
             });
+        }
+
+        public async Task<bool> SendRequestByUsernameAsync(Guid senderId, string receiverUsername)
+        {
+            if (string.IsNullOrWhiteSpace(receiverUsername))
+            {
+                throw new InvalidOperationException("Please enter a username.");
+            }
+
+            var receiver = await _userRepository.GetByUsernameAsync(receiverUsername.Trim());
+            if (receiver == null)
+            {
+                return false;
+            }
+
+            await SendRequestAsync(senderId, receiver.Id);
+            return true;
         }
 
         public async Task AcceptRequestAsync(Guid currentUserId, Guid requesterId)

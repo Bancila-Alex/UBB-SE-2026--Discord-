@@ -10,6 +10,8 @@
     <UserControl.Resources>
         <converters:NullToVisibilityConverter x:Key="NullToVisibility" />
         <converters:BoolToVisibilityConverter x:Key="BoolToVisibility" />
+        <converters:CountToVisibilityConverter x:Key="CountToVisibility" />
+        <converters:StringToImageSourceConverter x:Key="StringToImageSource" />
     </UserControl.Resources>
 
     <Grid Background="#17153B">
@@ -19,7 +21,11 @@
         </Grid.RowDefinitions>
 
         <!-- Header (always visible) -->
-        <Border Grid.Row="0" Background="#2E236C" Padding="12,10">
+        <Border
+            Grid.Row="0"
+            Background="#2E236C"
+            Padding="16,14"
+            Visibility="{x:Bind ViewModel.ShowHeader, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -50,7 +56,7 @@
             Grid.Row="1"
             VerticalScrollBarVisibility="Auto"
             Visibility="{x:Bind ViewModel.IsPanelVisible, Mode=OneWay, Converter={StaticResource BoolToVisibility}}">
-            <StackPanel Spacing="0">
+            <StackPanel Spacing="8" Padding="8,8,8,12">
 
                 <!-- Loading indicator -->
                 <ProgressRing
@@ -86,7 +92,7 @@
                     </ListView.ItemContainerStyle>
                     <ListView.ItemTemplate>
                         <DataTemplate x:DataType="vm:MemberDisplayItem">
-                            <Border Background="#2E236C" CornerRadius="6" Padding="10,8">
+                            <Border Background="#2E236C" CornerRadius="6" Padding="10,10" Margin="0,0,0,4">
                                 <Grid>
                                     <Grid.ColumnDefinitions>
                                         <ColumnDefinition Width="Auto" />
@@ -98,7 +104,7 @@
                                     <Grid Grid.Column="0" Width="36" Height="36" Margin="0,0,10,0">
                                         <Ellipse Fill="#433D8B" />
                                         <Image
-                                            Source="{x:Bind AvatarUrl}"
+                                            Source="{x:Bind AvatarUrl, Converter={StaticResource StringToImageSource}}"
                                             Stretch="UniformToFill"
                                             Visibility="{x:Bind AvatarUrl, Converter={StaticResource NullToVisibility}}" />
                                     </Grid>
@@ -126,12 +132,32 @@
                                         </StackPanel>
                                     </StackPanel>
 
+                                    <!-- View profile (all members) -->
+                                    <Button
+                                        Grid.Column="2"
+                                        Content="👤"
+                                        ToolTipService.ToolTip="View Profile"
+                                        Command="{Binding ElementName=RootControl, Path=ViewModel.ViewProfileCommand}"
+                                        CommandParameter="{x:Bind UserId}"
+                                        Background="Transparent"
+                                        Foreground="#C8ACD6"
+                                        BorderThickness="0"
+                                        CornerRadius="4"
+                                        Width="30"
+                                        Height="30"
+                                        Padding="0"
+                                        FontSize="14"
+                                        HorizontalAlignment="Right"
+                                        VerticalAlignment="Center" />
+
                                     <!-- Admin action buttons -->
                                     <StackPanel
                                         Grid.Column="2"
                                         Orientation="Horizontal"
-                                        Spacing="4"
+                                        Spacing="6"
                                         VerticalAlignment="Center"
+                                        HorizontalAlignment="Right"
+                                        Margin="0,0,34,0"
                                         Visibility="{Binding ElementName=RootControl, Path=ViewModel.IsAdmin, Converter={StaticResource BoolToVisibility}}">
                                         <Button
                                             Content="↑"
@@ -202,19 +228,6 @@
                                             Height="30"
                                             Padding="0"
                                             FontSize="14" />
-                                        <Button
-                                            Content="👤"
-                                            ToolTipService.ToolTip="View Profile"
-                                            Command="{Binding ElementName=RootControl, Path=ViewModel.ViewProfileCommand}"
-                                            CommandParameter="{x:Bind UserId}"
-                                            Background="Transparent"
-                                            Foreground="#C8ACD6"
-                                            BorderThickness="0"
-                                            CornerRadius="4"
-                                            Width="30"
-                                            Height="30"
-                                            Padding="0"
-                                            FontSize="14" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -248,7 +261,7 @@
                         </ListView.ItemContainerStyle>
                         <ListView.ItemTemplate>
                             <DataTemplate x:DataType="vm:MemberDisplayItem">
-                                <Border Background="#2E236C" CornerRadius="6" Padding="10,8">
+                                <Border Background="#2E236C" CornerRadius="6" Padding="10,10" Margin="0,0,0,4">
                                     <Grid>
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
@@ -328,7 +341,7 @@
                             Background="#17153B"
                             BorderThickness="0"
                             MaxHeight="160"
-                            Visibility="{x:Bind ViewModel.AddMemberResults.Count, Mode=OneWay, Converter={StaticResource NullToVisibility}}">
+                            Visibility="{x:Bind ViewModel.AddMemberResults.Count, Mode=OneWay, Converter={StaticResource CountToVisibility}}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:User">
                                     <Grid Padding="4,4">

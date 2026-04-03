@@ -30,7 +30,41 @@ namespace ChatModule.Services
 
         public async Task<List<Conversation>> GetAllAsync(Guid userId)
         {
-            return await _conversationRepository.GetAllForUserAsync(userId);
+            var conversations = await _conversationRepository.GetAllForUserAsync(userId);
+
+            foreach (var conversation in conversations)
+            {
+                var lastMessage = await _messageRepository.GetLastMessageAsync(conversation.Id);
+                conversation.LastMessageAt = lastMessage?.CreatedAt;
+                conversation.LastMessagePreview = BuildLastMessagePreview(lastMessage);
+
+                var unreadCount = await GetUnreadCountAsync(conversation.Id, userId);
+                conversation.UnreadCount = unreadCount;
+
+                if (conversation.Type == ConversationType.Dm)
+                {
+                    var participants = await _participantRepository.GetAllForConversationAsync(conversation.Id);
+                    var otherParticipant = participants.FirstOrDefault(participant => participant.UserId != userId);
+                    if (otherParticipant != null)
+                    {
+                        var otherUser = await _userRepository.GetByIdAsync(otherParticipant.UserId);
+                        if (otherUser != null)
+                        {
+                            conversation.Title = otherUser.Username;
+                            if (string.IsNullOrWhiteSpace(conversation.IconUrl))
+                            {
+                                conversation.IconUrl = otherUser.AvatarUrl;
+                            }
+                        }
+                    }
+                }
+            }
+
+            conversations = conversations
+                .OrderByDescending(conversation => conversation.LastMessageAt ?? DateTime.MinValue)
+                .ToList();
+
+            return conversations;
         }
 
         public async Task<List<Conversation>> GetDmsAsync(Guid userId)
@@ -164,11 +198,35 @@ namespace ChatModule.Services
         {
             if (participant.LastReadMessageId.HasValue)
             {
-                return await _messageRepository.CountUnreadAsync(conversationId, participant.LastReadMessageId.Value);
+                return await _messageRepository.CountUnreadAsync(conversationId, participant.LastReadMessageId.Value, participant.UserId);
             }
 
-            var lastMessage = await _messageRepository.GetLastMessageAsync(conversationId);
-            return lastMessage == null ? 0 : 1;
+            return await _messageRepository.CountUnreadFromStartAsync(conversationId, participant.UserId);
+        }
+
+        private static string BuildLastMessagePreview(Message? message)
+        {
+            if (message == null)
+            {
+                return string.Empty;
+            }
+
+            if (message.IsDeleted)
+            {
+                return "This message was deleted";
+            }
+
+            if (message.MessageType == MessageType.Reaction)
+            {
+                return "Reacted to a message";
+            }
+
+            if (message.MessageType == MessageType.System)
+            {
+                return message.Content ?? "System message";
+            }
+
+            return message.Content ?? string.Empty;
         }
     }
 }

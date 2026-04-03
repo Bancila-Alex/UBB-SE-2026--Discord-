@@ -27,40 +27,67 @@ namespace ChatModule.Services
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateRoleAsync(conversationId, targetId, ParticipantRole.Banned);
-            await WriteSystemMessageAsync(conversationId, $"User {targetId} was banned.");
+            var username = await ResolveUsernameAsync(targetId);
+            await WriteSystemMessageAsync(conversationId, $"{username} was banned.");
         }
 
         public async Task UnbanMemberAsync(Guid conversationId, Guid adminId, Guid targetId)
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateRoleAsync(conversationId, targetId, ParticipantRole.Member);
-            await WriteSystemMessageAsync(conversationId, $"User {targetId} was unbanned.");
+            var username = await ResolveUsernameAsync(targetId);
+            await WriteSystemMessageAsync(conversationId, $"{username} was unbanned.");
         }
 
         public async Task TimeoutMemberAsync(Guid conversationId, Guid adminId, Guid targetId, TimeSpan duration)
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateTimeoutAsync(conversationId, targetId, DateTime.UtcNow + duration);
+            var username = await ResolveUsernameAsync(targetId);
+            await WriteSystemMessageAsync(conversationId, $"{username} was timed out for {FormatDuration(duration)}.");
         }
 
         public async Task RemoveTimeoutAsync(Guid conversationId, Guid adminId, Guid targetId)
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateTimeoutAsync(conversationId, targetId, null);
+            var username = await ResolveUsernameAsync(targetId);
+            await WriteSystemMessageAsync(conversationId, $"Timeout removed for {username}.");
         }
 
         public async Task PromoteMemberAsync(Guid conversationId, Guid adminId, Guid targetId)
         {
             await RequireAdminAsync(conversationId, adminId);
             await _participantRepository.UpdateRoleAsync(conversationId, targetId, ParticipantRole.Admin);
-            await WriteSystemMessageAsync(conversationId, $"User {targetId} was promoted to admin.");
+            var username = await ResolveUsernameAsync(targetId);
+            await WriteSystemMessageAsync(conversationId, $"{username} was promoted to admin.");
         }
 
         public async Task DemoteMemberAsync(Guid conversationId, Guid adminId, Guid targetId)
         {
             await RequireAdminAsync(conversationId, adminId);
+
+            if (adminId == targetId)
+            {
+                var participants = await _participantRepository.GetAllForConversationAsync(conversationId);
+                var adminCount = 0;
+                foreach (var participant in participants)
+                {
+                    if (participant.Role == ParticipantRole.Admin)
+                    {
+                        adminCount++;
+                    }
+                }
+
+                if (adminCount <= 1)
+                {
+                    throw new InvalidOperationException("You cannot demote the only admin in the group.");
+                }
+            }
+
             await _participantRepository.UpdateRoleAsync(conversationId, targetId, ParticipantRole.Member);
-            await WriteSystemMessageAsync(conversationId, $"User {targetId} was demoted to member.");
+            var username = await ResolveUsernameAsync(targetId);
+            await WriteSystemMessageAsync(conversationId, $"{username} was demoted to member.");
         }
 
         public async Task AddMemberAsync(Guid conversationId, Guid adminId, Guid newUserId)
@@ -85,7 +112,14 @@ namespace ChatModule.Services
                 IsFavourite = false
             });
 
-            await WriteSystemMessageAsync(conversationId, $"User {newUserId} was added to the group.");
+            var username = await ResolveUsernameAsync(newUserId);
+            await WriteSystemMessageAsync(conversationId, $"{username} was added to the group.");
+        }
+
+        private async Task<string> ResolveUsernameAsync(Guid userId)
+        {
+            var user = await _userRepository.GetByIdAsync(userId);
+            return user?.Username ?? userId.ToString();
         }
 
         private async Task RequireAdminAsync(Guid conversationId, Guid userId)
@@ -112,6 +146,30 @@ namespace ChatModule.Services
                 MessageType = MessageType.System,
                 ParentMessageId = null
             });
+        }
+
+        private static string FormatDuration(TimeSpan duration)
+        {
+            var totalSeconds = Math.Max(0, (int)Math.Round(duration.TotalSeconds));
+            var days = totalSeconds / 86400;
+            totalSeconds %= 86400;
+            var hours = totalSeconds / 3600;
+            totalSeconds %= 3600;
+            var minutes = totalSeconds / 60;
+
+            if (days > 0)
+            {
+                return days == 1 ? "1 day" : $"{days} days";
+            }
+
+            if (hours > 0)
+            {
+                return minutes > 0
+                    ? (hours == 1 ? $"1 hour {minutes} minutes" : $"{hours} hours {minutes} minutes")
+                    : (hours == 1 ? "1 hour" : $"{hours} hours");
+            }
+
+            return minutes == 1 ? "1 minute" : $"{minutes} minutes";
         }
     }
 }

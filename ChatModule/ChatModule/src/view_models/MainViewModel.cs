@@ -98,9 +98,10 @@ namespace ChatModule.ViewModels
         {
             if (_friendListService != null)
             {
-                var friendListViewModel = new FriendListViewModel(_friendListService, _directMessageService, CurrentUserId);
+                var friendListViewModel = new FriendListViewModel(_friendListService, _friendRequestService, _directMessageService, CurrentUserId);
                 friendListViewModel.NavigateToProfileRequested += OnNavigateToProfileFromFriends;
                 friendListViewModel.NavigateToChatRequested += OnNavigateToChatFromFriends;
+                friendListViewModel.OpenRequestsRequested += OnOpenRequestsFromFriends;
                 CurrentPage = friendListViewModel;
                 return Task.CompletedTask;
             }
@@ -122,6 +123,13 @@ namespace ChatModule.ViewModels
             NavigateToChatRequested?.Invoke(conversationId);
         }
 
+        private void OnOpenRequestsFromFriends()
+        {
+            var friendRequestsViewModel = new FriendRequestsViewModel(_friendRequestService, CurrentUserId);
+            friendRequestsViewModel.NavigateBackRequested += () => _ = GoToFriendsAsync();
+            CurrentPage = friendRequestsViewModel;
+        }
+
         private async Task ShowProfileAsync(Guid targetUserId)
         {
             var profileViewModel = new ProfileViewModel(_friendRequestService, _blockService, _directMessageService, _profileService, CurrentUserId);
@@ -131,6 +139,11 @@ namespace ChatModule.ViewModels
 
         private Task LogoutAsync()
         {
+            if (CurrentUserId != Guid.Empty)
+            {
+                _ = _profileService.UpdateStatusAsync(CurrentUserId, ChatModule.src.domain.Enums.UserStatus.Offline);
+            }
+
             CurrentUserId = Guid.Empty;
             CurrentUsername = string.Empty;
             CurrentPage = null;

@@ -14,6 +14,7 @@ namespace ChatModule.Services
         private readonly ConversationRepository _convRepo;
         private readonly ParticipantRepository _participantRepo;
         private readonly MessageRepository _messageRepo;
+        private readonly UserRepository _userRepo;
 
         public GroupService(
             ConversationRepository convRepo,
@@ -24,7 +25,7 @@ namespace ChatModule.Services
             _convRepo = convRepo;
             _participantRepo = participantRepo;
             _messageRepo = messageRepo;
-            _ = userRepo;
+            _userRepo = userRepo;
         }
 
         public async Task<Conversation> CreateGroupAsync(Guid creatorId, string title, string? iconUrl, List<Guid> memberIds)
@@ -73,7 +74,8 @@ namespace ChatModule.Services
                 });
             }
 
-            await WriteSystemMessageAsync(conversation.Id, $"Group \"{title}\" was created.");
+            var creatorName = await ResolveUsernameAsync(creatorId);
+            await WriteSystemMessageAsync(conversation.Id, $"Group \"{title}\" was created by {creatorName}.");
             return conversation;
         }
 
@@ -103,6 +105,7 @@ namespace ChatModule.Services
 
             if (remainingParticipants.Count == 0)
             {
+                await _messageRepo.DeleteByConversationAsync(conversationId);
                 await _convRepo.DeleteAsync(conversationId);
                 return;
             }
@@ -119,10 +122,12 @@ namespace ChatModule.Services
                     .First();
 
                 await _participantRepo.UpdateRoleAsync(conversationId, promotedParticipant.UserId, ParticipantRole.Admin);
-                await WriteSystemMessageAsync(conversationId, "A new admin has been appointed.");
+                var promotedName = await ResolveUsernameAsync(promotedParticipant.UserId);
+                await WriteSystemMessageAsync(conversationId, $"{promotedName} is now an admin.");
             }
 
-            await WriteSystemMessageAsync(conversationId, "A member has left the group.");
+            var leavingName = await ResolveUsernameAsync(userId);
+            await WriteSystemMessageAsync(conversationId, $"{leavingName} left the group.");
         }
 
         public async Task PinMessageAsync(Guid conversationId, Guid requesterId, Guid messageId)
@@ -174,6 +179,12 @@ namespace ChatModule.Services
                 MessageType = MessageType.System,
                 ParentMessageId = null
             });
+        }
+
+        private async Task<string> ResolveUsernameAsync(Guid userId)
+        {
+            var user = await _userRepo.GetByIdAsync(userId);
+            return user?.Username ?? userId.ToString();
         }
     }
 }
