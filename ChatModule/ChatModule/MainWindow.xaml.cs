@@ -60,7 +60,7 @@ namespace ChatModule
             var directMessageService = new DirectMessageService(conversationRepository, participantRepository, friendRepository, userRepository);
             var groupService = new GroupService(conversationRepository, participantRepository, messageRepository, userRepository);
             var searchService = new SearchService(messageRepository, participantRepository, userRepository);
-            var messageService = new MessageService(messageRepository, participantRepository, userRepository);
+            var messageService = new MessageService(messageRepository, participantRepository, userRepository, conversationRepository);
             var messageInteractionService = new MessageInteractionService(messageRepository, participantRepository, userRepository);
             var readReceiptService = new ReadReceiptService(participantRepository, messageRepository, userRepository);
             var mentionService = new MentionService(participantRepository, userRepository);
@@ -283,6 +283,33 @@ namespace ChatModule
             _ = await dialog.ShowAsync();
         }
 
+        private async Task<string?> ShowInputDialogAsync(string title, string placeholder)
+        {
+            var inputBox = new TextBox
+            {
+                PlaceholderText = placeholder,
+                Margin = new Thickness(0, 8, 0, 0)
+            };
+
+            var dialog = new ContentDialog
+            {
+                Title = title,
+                Content = inputBox,
+                PrimaryButtonText = "Save",
+                CloseButtonText = "Cancel",
+                DefaultButton = ContentDialogButton.Primary,
+                XamlRoot = CurrentPageHost.XamlRoot
+            };
+
+            var result = await dialog.ShowAsync();
+            if (result != ContentDialogResult.Primary)
+            {
+                return null;
+            }
+
+            return inputBox.Text;
+        }
+
         private async Task OpenChatAsync(Guid conversationId)
         {
             try
@@ -317,6 +344,37 @@ namespace ChatModule
                     catch (Exception ex)
                     {
                         await ShowInfoDialogAsync("Unable to leave group", ex.Message);
+                    }
+                };
+                chatViewModel.SetNicknameRequested += async () =>
+                {
+                    var nickname = await ShowInputDialogAsync("Set group nickname", "Nickname (max 16 chars)");
+                    if (nickname == null)
+                    {
+                        return;
+                    }
+
+                    try
+                    {
+                        await _messageService.SetNicknameAsync(conversationId, ViewModel.CurrentUserId, nickname);
+                        await chatViewModel.LoadAsync(conversationId);
+                    }
+                    catch (Exception ex)
+                    {
+                        await ShowInfoDialogAsync("Nickname", ex.Message);
+                    }
+                };
+
+                chatViewModel.ClearNicknameRequested += async () =>
+                {
+                    try
+                    {
+                        await _messageService.SetNicknameAsync(conversationId, ViewModel.CurrentUserId, null);
+                        await chatViewModel.LoadAsync(conversationId);
+                    }
+                    catch (Exception ex)
+                    {
+                        await ShowInfoDialogAsync("Nickname", ex.Message);
                     }
                 };
 

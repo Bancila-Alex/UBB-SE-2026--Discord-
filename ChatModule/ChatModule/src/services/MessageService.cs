@@ -13,15 +13,18 @@ namespace ChatModule.Services
         private readonly MessageRepository _messageRepository;
         private readonly ParticipantRepository _participantRepository;
         private readonly UserRepository _userRepository;
+        private readonly ConversationRepository _conversationRepository;
 
         public MessageService(
             MessageRepository messageRepository,
             ParticipantRepository participantRepository,
-            UserRepository userRepository)
+            UserRepository userRepository,
+            ConversationRepository conversationRepository)
         {
             _messageRepository = messageRepository;
             _participantRepository = participantRepository;
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+            _conversationRepository = conversationRepository ?? throw new ArgumentNullException(nameof(conversationRepository));
         }
 
         private async Task<Participant> RequireActiveParticipantAsync(Guid conversationId, Guid userId)
@@ -132,6 +135,11 @@ namespace ChatModule.Services
                 throw new ArgumentException("Message content cannot be empty.", nameof(content));
             }
 
+            if (content.Length > 1024)
+            {
+                throw new InvalidOperationException("Message length cannot exceed 1024 characters.");
+            }
+
             var message = new Message
             {
                 Id = Guid.NewGuid(),
@@ -235,9 +243,28 @@ namespace ChatModule.Services
                 }
 
                 var sender = await _userRepository.GetByIdAsync(message.UserId.Value);
-                message.SenderUsername = sender?.Username ?? "Unknown";
+                var displayName = sender?.Username ?? "Unknown";
+
+                var participant = await _participantRepository.GetAsync(message.ConversationId, message.UserId.Value);
+                var conversation = await _conversationRepository.GetByIdAsync(message.ConversationId);
+                if (conversation?.Type == ConversationType.Group && !string.IsNullOrWhiteSpace(participant?.Nickname))
+                {
+                    displayName = participant.Nickname!;
+                }
+
+                message.SenderUsername = displayName;
                 message.SenderAvatarUrl = sender?.AvatarUrl;
             }
+        }
+
+        public async Task SetNicknameAsync(Guid conversationId, Guid userId, string? nickname)
+        {
+            if (!string.IsNullOrWhiteSpace(nickname) && nickname.Length > 16)
+            {
+                throw new InvalidOperationException("Nickname cannot exceed 16 characters.");
+            }
+
+            await _participantRepository.UpdateNicknameAsync(conversationId, userId, string.IsNullOrWhiteSpace(nickname) ? null : nickname.Trim());
         }
     }
 }

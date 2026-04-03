@@ -122,6 +122,8 @@ namespace ChatModule.src.view_models
         public event Action<Guid>? ScrollToMessageRequested;
         public event Action<string>? ReadReceiptDetailsRequested;
         public event Action? LeaveGroupRequested;
+        public event Action? SetNicknameRequested;
+        public event Action? ClearNicknameRequested;
 
         public RelayCommand<Guid> ReactCommand { get; }
 
@@ -810,6 +812,26 @@ namespace ChatModule.src.view_models
             if (IsConversationGroup)
             {
                 LeaveGroupRequested?.Invoke();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task SetNicknameAsync()
+        {
+            if (IsConversationGroup)
+            {
+                SetNicknameRequested?.Invoke();
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task ClearNicknameAsync()
+        {
+            if (IsConversationGroup)
+            {
+                ClearNicknameRequested?.Invoke();
             }
 
             return Task.CompletedTask;

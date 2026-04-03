@@ -131,6 +131,16 @@ namespace ChatModule.src.views
             await ViewModel.ClearAttachmentAsync();
         }
 
+        private async void OnSetNicknameClicked(object sender, RoutedEventArgs e)
+        {
+            await ViewModel.SetNicknameAsync();
+        }
+
+        private async void OnClearNicknameClicked(object sender, RoutedEventArgs e)
+        {
+            await ViewModel.ClearNicknameAsync();
+        }
+
         private async void OnReadReceiptTapped(object sender, TappedRoutedEventArgs e)
         {
             if (sender is TextBlock { Tag: Guid messageId })

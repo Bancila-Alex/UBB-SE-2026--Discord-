@@ -229,6 +229,32 @@
 
                     <Button
                         Grid.Column="1"
+                        Content="Nickname"
+                        Click="OnSetNicknameClicked"
+                        Background="#2E236C"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#433D8B"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        Margin="90,0,0,0"
+                        Visibility="{x:Bind ViewModel.IsConversationGroup, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Button
+                        Grid.Column="1"
+                        Content="Clear Nickname"
+                        Click="OnClearNicknameClicked"
+                        Background="#2E236C"
+                        Foreground="#C8ACD6"
+                        BorderBrush="#433D8B"
+                        BorderThickness="1"
+                        CornerRadius="4"
+                        Padding="12,6"
+                        Margin="200,0,0,0"
+                        Visibility="{x:Bind ViewModel.IsConversationGroup, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
+
+                    <Button
+                        Grid.Column="1"
                         Content="Leave"
                         Click="OnLeaveGroupClicked"
                         Background="#2E236C"
@@ -237,7 +263,7 @@
                         BorderThickness="1"
                         CornerRadius="4"
                         Padding="12,6"
-                        Margin="90,0,0,0"
+                        Margin="340,0,0,0"
                         Visibility="{x:Bind ViewModel.IsConversationGroup, Mode=OneWay, Converter={StaticResource BoolToVisibility}}" />
                 </Grid>
             </Border>
